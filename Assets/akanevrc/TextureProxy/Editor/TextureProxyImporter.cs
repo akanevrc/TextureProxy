@@ -10,7 +10,7 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
-        public Color albedo = Color.white;
+        public PixelFilterSettings settings;
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
@@ -29,10 +29,7 @@ namespace akanevrc.TextureProxy
             {
                 texture.LoadImage(bytes);
                 var pixels = texture.GetPixels();
-                for (var i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i] *= albedo;
-                }
+                var filtered = PixelFilter.Filter(settings, pixels);
 
                 var output = TextureGenerator.GenerateTexture(
                     new TextureGenerationSettings(TextureImporterType.Default)
@@ -72,7 +69,7 @@ namespace akanevrc.TextureProxy
                             aniso = 1
                         }
                     },
-                    new NativeArray<Color32>(pixels.Select(color => (Color32)color).ToArray(), Allocator.Temp)
+                    new NativeArray<Color32>(filtered.Select(color => (Color32)color).ToArray(), Allocator.Temp)
                 );
                 ctx.AddObjectToAsset("Texture", output.texture);
                 ctx.SetMainObject(output.texture);
