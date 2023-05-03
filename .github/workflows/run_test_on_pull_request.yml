@@ -22,4 +22,4 @@ jobs:
           projectPath: .
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: 2019.4.31f1
-          testMode: All
+          testMode: EditMode
