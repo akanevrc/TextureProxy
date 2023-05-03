@@ -8,4 +8,9 @@ ScriptedImporter:
   assetBundleName: 
   assetBundleVariant: 
   script: {fileID: 11500000, guid: 4abf1bbaaedb39340971e5070da42611, type: 3}
-  albedo: {r: 1, g: 1, b: 1, a: 1}
+  settings:
+    mode: 1
+    r: 1
+    g: 1
+    b: 1
+    a: 1
