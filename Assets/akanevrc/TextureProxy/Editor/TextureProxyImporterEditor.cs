@@ -7,18 +7,18 @@ namespace akanevrc.TextureProxy
     [CustomEditor(typeof(TextureProxyImporter))]
     public class TextureProxyImporterEditor : ScriptedImporterEditor
     {
-        SerializedProperty albedo;
+        TextureProxyImporter importer;
+        SerializedProperty settings;
 
         public override void OnEnable()
         {
             base.OnEnable();
-            this.albedo = this.serializedObject.FindProperty(nameof(this.albedo));
+            this.importer = (TextureProxyImporter)this.target;
+            this.settings = this.serializedObject.FindProperty(nameof(this.settings));
         }
 
         public override void OnInspectorGUI()
         {
-            var importer = (TextureProxyImporter)this.target;
-
             EditorGUI.BeginChangeCheck();
 
             var oldFontStyle = EditorStyles.label.fontStyle;
@@ -28,12 +28,39 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.PropertyField(this.albedo);
+            PixelFilterSettingsField(this.settings);
 
             EditorGUILayout.Space();
 
             serializedObject.ApplyModifiedProperties();
             base.ApplyRevertGUI();
+        }
+
+        private void PixelFilterSettingsField(SerializedProperty settings)
+        {
+            var modeProp = settings.FindPropertyRelative("mode");
+            var rProp = settings.FindPropertyRelative("r");
+            var gProp = settings.FindPropertyRelative("g");
+            var bProp = settings.FindPropertyRelative("b");
+            var aProp = settings.FindPropertyRelative("a");
+
+            EditorGUI.BeginChangeCheck();
+
+            var mode = (PixelFilterMode)EditorGUILayout.EnumPopup("Mode", (PixelFilterMode)modeProp.intValue);
+            var r = EditorGUILayout.Slider("R", rProp.floatValue, 0F, 1F);
+            var g = EditorGUILayout.Slider("G", gProp.floatValue, 0F, 1F);
+            var b = EditorGUILayout.Slider("B", bProp.floatValue, 0F, 1F);
+            var a = EditorGUILayout.Slider("A", aProp.floatValue, 0F, 1F);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(this.importer, "Inspector");
+                modeProp.intValue = (int)mode;
+                rProp.floatValue = r;
+                gProp.floatValue = g;
+                bProp.floatValue = b;
+                aProp.floatValue = a;
+            }
         }
     }
 }
