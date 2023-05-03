@@ -1,10 +1,8 @@
-name: Run test on pull request
+name: Run test on push or pull request
 
 on:
-  pull_request:
-    branches:
-      - main
-      - ci
+  - push
+  - pull_request
 
 jobs:
   test:
