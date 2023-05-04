@@ -17,16 +17,23 @@ ScriptedImporter:
   textureImporterSettings:
     textureType: 0
     textureShape: 1
+    generateCubemap: 6
+    cubemapConvolution: 0
+    seamlessCubemap: 0
     sRGBTexture: 1
     alphaSource: 1
     alphaIsTransparency: 0
     readable: 0
     streamingMipmaps: 0
+    streamingMipmapsPriority: 0
     mipmapEnabled: 1
     borderMipmap: 0
     mipmapFilter: 0
     mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
     fadeOut: 0
+    mipmapFadeDistanceStart: 1
+    mipmapFadeDistanceEnd: 3
     wrapMode: 0
     filterMode: 1
     aniso: 1
