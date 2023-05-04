@@ -172,7 +172,10 @@ namespace akanevrc.TextureProxy
                 var pixels = texture.GetPixels();
                 foreach (var settings in pixelFilterSettingsList)
                 {
-                    pixels = PixelFilter.Filter(settings, pixels);
+                    if (settings.toggle)
+                    {
+                        pixels = PixelFilter.Filter(settings, pixels);
+                    }
                 }
 
                 var output = TextureGenerator.GenerateTexture
