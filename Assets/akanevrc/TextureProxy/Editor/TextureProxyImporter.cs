@@ -152,7 +152,6 @@ namespace akanevrc.TextureProxy
                 textureCompression = TextureImporterCompression.Compressed
             };
 
-
         public override void OnImportAsset(AssetImportContext ctx)
         {
             var bytes = (byte[])null;
@@ -165,18 +164,19 @@ namespace akanevrc.TextureProxy
                 return;
             }
 
-            var texture = new Texture2D(1024, 1024, TextureFormat.RGBA32, 0, true);
+            var texture =
+                new Texture2D
+                (
+                    this.sourceTextureInformation.width,
+                    this.sourceTextureInformation.height,
+                    TextureFormat.RGBA32,
+                    0,
+                    true
+                );
             try
             {
                 texture.LoadImage(bytes);
-                var pixels = texture.GetPixels();
-                foreach (var settings in pixelFilterSettingsList)
-                {
-                    if (settings.toggle)
-                    {
-                        pixels = PixelFilter.Filter(settings, pixels);
-                    }
-                }
+                var pixels = PixelFilter.FilterAll(this.pixelFilterSettingsList, texture.GetPixels());
 
                 var output = TextureGenerator.GenerateTexture
                 (

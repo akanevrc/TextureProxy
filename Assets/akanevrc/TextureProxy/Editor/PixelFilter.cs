@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace akanevrc.TextureProxy
@@ -46,6 +47,18 @@ namespace akanevrc.TextureProxy
 
     public static class PixelFilter
     {
+        public static Color[] FilterAll(IEnumerable<PixelFilterSettings> settingsList, Color[] pixels)
+        {
+            foreach (var settings in settingsList)
+            {
+                if (settings.toggle)
+                {
+                    pixels = PixelFilter.Filter(settings, pixels);
+                }
+            }
+            return pixels;
+        }
+
         public static Color[] Filter(PixelFilterSettings settings, Color[] pixels)
         {
             switch (settings.mode)

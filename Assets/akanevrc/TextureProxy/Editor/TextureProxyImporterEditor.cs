@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
@@ -9,11 +10,17 @@ namespace akanevrc.TextureProxy
     [CustomEditor(typeof(TextureProxyImporter))]
     public class TextureProxyImporterEditor : ScriptedImporterEditor
     {
+        public static readonly Vector2 previewTextureSize = new Vector2(64F, 64F);
+        public static readonly float previewTextureSpace = 8F;
+
         private TextureProxyImporter importer;
         private SerializedProperty pixelFilterSettingsList;
         private SerializedProperty sourceTextureInformation;
         private SerializedProperty textureImporterSettings;
         private SerializedProperty textureImporterPlatformSettings;
+
+        private Texture2D previewTexture;
+        private Texture2D sourceTexture;
 
         public override void OnEnable()
         {
@@ -23,6 +30,55 @@ namespace akanevrc.TextureProxy
             this.sourceTextureInformation = this.serializedObject.FindProperty(nameof(this.sourceTextureInformation));
             this.textureImporterSettings = this.serializedObject.FindProperty(nameof(this.textureImporterSettings));
             this.textureImporterPlatformSettings = this.serializedObject.FindProperty(nameof(this.textureImporterPlatformSettings));
+
+            this.previewTexture =
+                new Texture2D
+                (
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
+                    TextureFormat.RGBA32,
+                    0,
+                    false
+                );
+            this.sourceTexture =
+                new Texture2D
+                (
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
+                    TextureFormat.RGBA32,
+                    0,
+                    false
+                );
+
+            var bytes = (byte[])null;
+            try
+            {
+                bytes = File.ReadAllBytes(AssetDatabase.GetAssetPath(this.assetTarget));
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            this.sourceTexture.LoadImage(bytes);
+            this.previewTexture.LoadImage(bytes);
+            this.previewTexture.SetPixels(PixelFilter.FilterAll(this.importer.pixelFilterSettingsList, this.previewTexture.GetPixels()));
+            this.previewTexture.Apply();
+        }
+
+        public override void OnDisable()
+        {
+            if (this.previewTexture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(this.previewTexture);
+                this.previewTexture = null;
+            }
+            if (this.sourceTexture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(this.sourceTexture);
+                this.sourceTexture = null;
+            }
+            base.OnDisable();
         }
 
         public override void OnInspectorGUI()
@@ -31,6 +87,20 @@ namespace akanevrc.TextureProxy
             EditorStyles.label.fontStyle = FontStyle.Bold;
             EditorGUILayout.LabelField("Texture Proxy Import Settings");
             EditorStyles.label.fontStyle = oldFontStyle;
+
+            EditorGUILayout.Space();
+
+            var controlRect = EditorGUILayout.GetControlRect(false, TextureProxyImporterEditor.previewTextureSize.y);
+            var previewTextureRect = new Rect(controlRect.position, TextureProxyImporterEditor.previewTextureSize);
+            var sourceTextureRect =
+                new Rect
+                (
+                    controlRect.position +
+                        new Vector2(TextureProxyImporterEditor.previewTextureSize.x + TextureProxyImporterEditor.previewTextureSpace, 0F),
+                    TextureProxyImporterEditor.previewTextureSize
+                );
+            EditorGUI.DrawPreviewTexture(previewTextureRect, this.previewTexture);
+            EditorGUI.DrawPreviewTexture(sourceTextureRect, this.sourceTexture);
 
             EditorGUILayout.Space();
 
@@ -50,10 +120,18 @@ namespace akanevrc.TextureProxy
 
             serializedObject.ApplyModifiedProperties();
             base.ApplyRevertGUI();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                this.previewTexture.SetPixels(PixelFilter.FilterAll(this.importer.pixelFilterSettingsList, this.sourceTexture.GetPixels()));
+                this.previewTexture.Apply();
+            }
         }
 
         private void PixelFilterSettingsList(SerializedProperty settingsList)
         {
+            EditorGUI.BeginChangeCheck();
+
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
             var insertingIndex = new List<int>();
