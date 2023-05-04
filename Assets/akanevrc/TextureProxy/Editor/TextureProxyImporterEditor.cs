@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.AssetImporters;
 using UnityEditor;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
 namespace akanevrc.TextureProxy
