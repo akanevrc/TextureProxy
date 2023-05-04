@@ -29,7 +29,7 @@ namespace akanevrc.TextureProxy
         {
             var oldFontStyle = EditorStyles.label.fontStyle;
             EditorStyles.label.fontStyle = FontStyle.Bold;
-            EditorGUILayout.LabelField("Texture Wrapper Import Settings");
+            EditorGUILayout.LabelField("Texture Proxy Import Settings");
             EditorStyles.label.fontStyle = oldFontStyle;
 
             EditorGUILayout.Space();
