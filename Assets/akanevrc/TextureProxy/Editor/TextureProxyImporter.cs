@@ -39,7 +39,7 @@ namespace akanevrc.TextureProxy
                     new TextureGenerationSettings(TextureImporterType.Default)
                     {
                         assetPath = ctx.assetPath,
-                        enablePostProcessor = true,
+                        enablePostProcessor = false,
                         platformSettings = new TextureImporterPlatformSettings()
                         {
                             format = TextureImporterFormat.Automatic,
@@ -51,7 +51,7 @@ namespace akanevrc.TextureProxy
                         {
                             width = 1024,
                             height = 1024,
-                            containsAlpha = false,
+                            containsAlpha = true,
                             hdr = false
                         },
                         textureImporterSettings = new TextureImporterSettings()
