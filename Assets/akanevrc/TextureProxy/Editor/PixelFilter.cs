@@ -17,6 +17,12 @@ namespace akanevrc.TextureProxy
         ColorDodge,
         LinearDodge,
         Overlay,
+        SoftLight,
+        HardLight,
+        VividLight,
+        LinearLight,
+        PinLight,
+        HardMix,
         Difference,
         Exclusion,
         Subtract,
@@ -25,8 +31,8 @@ namespace akanevrc.TextureProxy
         Saturation,
         HSVColor,
         Luminosity,
-        LighterColor,
-        DarkerColor
+        DarkerColor,
+        LighterColor
     }
 
     [Serializable]
@@ -85,6 +91,18 @@ namespace akanevrc.TextureProxy
                     return OnePixelFilter(settings, pixels, LinearDodge);
                 case PixelFilterMode.Overlay:
                     return OnePixelFilter(settings, pixels, Overlay);
+                case PixelFilterMode.SoftLight:
+                    return OnePixelFilter(settings, pixels, SoftLight);
+                case PixelFilterMode.HardLight:
+                    return OnePixelFilter(settings, pixels, HardLight);
+                case PixelFilterMode.VividLight:
+                    return OnePixelFilter(settings, pixels, VividLight);
+                case PixelFilterMode.LinearLight:
+                    return OnePixelFilter(settings, pixels, LinearLight);
+                case PixelFilterMode.PinLight:
+                    return OnePixelFilter(settings, pixels, PinLight);
+                case PixelFilterMode.HardMix:
+                    return OnePixelFilter(settings, pixels, HardMix);
                 case PixelFilterMode.Difference:
                     return OnePixelFilter(settings, pixels, Difference);
                 case PixelFilterMode.Exclusion:
@@ -101,10 +119,10 @@ namespace akanevrc.TextureProxy
                     return OnePixelFilter(settings, pixels, HSVColor);
                 case PixelFilterMode.Luminosity:
                     return OnePixelFilter(settings, pixels, Luminosity);
-                case PixelFilterMode.LighterColor:
-                    return OnePixelFilter(settings, pixels, LighterColor);
                 case PixelFilterMode.DarkerColor:
                     return OnePixelFilter(settings, pixels, DarkerColor);
+                case PixelFilterMode.LighterColor:
+                    return OnePixelFilter(settings, pixels, LighterColor);
                 default:
                     throw new NotSupportedException();
             }
