@@ -9,11 +9,11 @@ namespace akanevrc.TextureProxy
     [CustomEditor(typeof(TextureProxyImporter))]
     public class TextureProxyImporterEditor : ScriptedImporterEditor
     {
-        TextureProxyImporter importer;
-        SerializedProperty pixelFilterSettingsList;
-        SerializedProperty sourceTextureInformation;
-        SerializedProperty textureImporterSettings;
-        SerializedProperty textureImporterPlatformSettings;
+        private TextureProxyImporter importer;
+        private SerializedProperty pixelFilterSettingsList;
+        private SerializedProperty sourceTextureInformation;
+        private SerializedProperty textureImporterSettings;
+        private SerializedProperty textureImporterPlatformSettings;
 
         public override void OnEnable()
         {
