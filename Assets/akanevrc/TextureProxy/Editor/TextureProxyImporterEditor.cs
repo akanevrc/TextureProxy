@@ -27,8 +27,6 @@ namespace akanevrc.TextureProxy
 
         public override void OnInspectorGUI()
         {
-            EditorGUI.BeginChangeCheck();
-
             var oldFontStyle = EditorStyles.label.fontStyle;
             EditorStyles.label.fontStyle = FontStyle.Bold;
             EditorGUILayout.LabelField("Texture Wrapper Import Settings");
