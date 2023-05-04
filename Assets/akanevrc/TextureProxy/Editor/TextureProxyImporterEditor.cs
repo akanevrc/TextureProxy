@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditor;
 using UnityEngine;
@@ -8,13 +10,13 @@ namespace akanevrc.TextureProxy
     public class TextureProxyImporterEditor : ScriptedImporterEditor
     {
         TextureProxyImporter importer;
-        SerializedProperty settings;
+        SerializedProperty settingsList;
 
         public override void OnEnable()
         {
             base.OnEnable();
             this.importer = (TextureProxyImporter)this.target;
-            this.settings = this.serializedObject.FindProperty(nameof(this.settings));
+            this.settingsList = this.serializedObject.FindProperty(nameof(this.settingsList));
         }
 
         public override void OnInspectorGUI()
@@ -28,12 +30,74 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            PixelFilterSettingsField(this.settings);
+            PixelFilterSettingsList(this.settingsList);
 
             EditorGUILayout.Space();
 
             serializedObject.ApplyModifiedProperties();
             base.ApplyRevertGUI();
+        }
+
+        private void PixelFilterSettingsList(SerializedProperty settingsList)
+        {
+            var movingUpIndex = new List<int>();
+            var movingDownIndex = new List<int>();
+            var insertingIndex = new List<int>();
+            var deletingIndex = new List<int>();
+            for (var i = settingsList.arraySize - 1; i >= 0; i--)
+            {
+                var settings = settingsList.GetArrayElementAtIndex(i);
+                var toggle = settings.FindPropertyRelative("toggle");
+
+                EditorGUI.BeginChangeCheck();
+                var t = EditorGUILayout.BeginToggleGroup($"Layer {i}", toggle.boolValue);
+                PixelFilterSettingsField(settings);
+                EditorGUILayout.EndToggleGroup();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(this.importer, "Inspector");
+                    toggle.boolValue = t;
+                }
+
+                if (i < settingsList.arraySize - 1 && GUILayout.Button("Move Up"))
+                {
+                    movingUpIndex.Add(i);
+                }
+                if (i > 0 && GUILayout.Button("Move Down"))
+                {
+                    movingDownIndex.Add(i);
+                }
+                if (GUILayout.Button("Insert"))
+                {
+                    insertingIndex.Add(i);
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    deletingIndex.Add(i);
+                }
+            }
+
+            foreach (var index in movingUpIndex)
+            {
+                settingsList.MoveArrayElement(index, index + 1);
+            }
+            foreach (var index in movingDownIndex.Reverse<int>())
+            {
+                settingsList.MoveArrayElement(index, index - 1);
+            }
+            foreach (var index in insertingIndex)
+            {
+                settingsList.InsertArrayElementAtIndex(index);
+            }
+            foreach (var index in deletingIndex)
+            {
+                settingsList.DeleteArrayElementAtIndex(index);
+            }
+
+            if (GUILayout.Button("Add"))
+            {
+                settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
+            }
         }
 
         private void PixelFilterSettingsField(SerializedProperty settings)

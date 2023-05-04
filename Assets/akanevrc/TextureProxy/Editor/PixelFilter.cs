@@ -12,6 +12,7 @@ namespace akanevrc.TextureProxy
     [Serializable]
     public struct PixelFilterSettings
     {
+        public bool toggle;
         public PixelFilterMode mode;
         public float r;
         public float g;
