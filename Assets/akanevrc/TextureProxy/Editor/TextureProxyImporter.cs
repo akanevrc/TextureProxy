@@ -11,7 +11,7 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
-        public List<PixelFilterSettings> settingsList = new List<PixelFilterSettings>();
+        public List<PixelFilterSettings> pixelFilterSettingsList = new List<PixelFilterSettings>();
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
@@ -30,7 +30,7 @@ namespace akanevrc.TextureProxy
             {
                 texture.LoadImage(bytes);
                 var pixels = texture.GetPixels();
-                foreach (var settings in settingsList)
+                foreach (var settings in pixelFilterSettingsList)
                 {
                     pixels = PixelFilter.Filter(settings, pixels);
                 }

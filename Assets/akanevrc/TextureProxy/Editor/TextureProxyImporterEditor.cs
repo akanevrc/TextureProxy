@@ -10,13 +10,13 @@ namespace akanevrc.TextureProxy
     public class TextureProxyImporterEditor : ScriptedImporterEditor
     {
         TextureProxyImporter importer;
-        SerializedProperty settingsList;
+        SerializedProperty pixelFilterSettingsList;
 
         public override void OnEnable()
         {
             base.OnEnable();
             this.importer = (TextureProxyImporter)this.target;
-            this.settingsList = this.serializedObject.FindProperty(nameof(this.settingsList));
+            this.pixelFilterSettingsList = this.serializedObject.FindProperty(nameof(this.pixelFilterSettingsList));
         }
 
         public override void OnInspectorGUI()
@@ -30,7 +30,7 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            PixelFilterSettingsList(this.settingsList);
+            PixelFilterSettingsList(this.pixelFilterSettingsList);
 
             EditorGUILayout.Space();
 
