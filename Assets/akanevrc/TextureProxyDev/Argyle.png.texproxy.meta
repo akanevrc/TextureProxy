@@ -8,4 +8,30 @@ ScriptedImporter:
   assetBundleName: 
   assetBundleVariant: 
   script: {fileID: 11500000, guid: 4abf1bbaaedb39340971e5070da42611, type: 3}
-  settingsList: []
+  pixelFilterSettingsList: []
+  sourceTextureInformation:
+    width: 1024
+    height: 1024
+    containsAlpha: 1
+    hdr: 0
+  textureImporterSettings:
+    textureType: 0
+    textureShape: 1
+    sRGBTexture: 1
+    alphaSource: 1
+    alphaIsTransparency: 0
+    readable: 0
+    streamingMipmaps: 0
+    mipmapEnabled: 1
+    borderMipmap: 0
+    mipmapFilter: 0
+    mipMapsPreserveCoverage: 0
+    fadeOut: 0
+    wrapMode: 0
+    filterMode: 1
+    aniso: 1
+  textureImporterPlatformSettings:
+    format: -1
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureCompression: 1
