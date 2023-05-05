@@ -51,7 +51,7 @@ namespace akanevrc.TextureProxy
         public int mipmapFadeDistanceStart;
         public int mipmapFadeDistanceEnd;
         public TextureWrapMode wrapMode;
-        public FilterMode filterMode;
+        public UnityEngine.FilterMode filterMode;
         public int aniso;
 
         public static explicit operator TextureImporterSettings(TextureProxyImporterSettings settings)
@@ -109,7 +109,7 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
-        public List<PixelFilterSettings> pixelFilterSettingsList = new List<PixelFilterSettings>();
+        public List<FilterSettings> filterSettingsList = new List<FilterSettings>();
         public SourceTextureProxyInformation sourceTextureInformation =
             new SourceTextureProxyInformation()
             {
@@ -141,7 +141,7 @@ namespace akanevrc.TextureProxy
                 mipmapFadeDistanceStart = 1,
                 mipmapFadeDistanceEnd = 3,
                 wrapMode = TextureWrapMode.Repeat,
-                filterMode = FilterMode.Bilinear,
+                filterMode = UnityEngine.FilterMode.Bilinear,
                 aniso = 1
             };
         public TextureProxyImporterPlatformSettings textureImporterPlatformSettings =
@@ -218,7 +218,7 @@ namespace akanevrc.TextureProxy
         private void ApplyFilters(byte[] bytes, Texture2D source, RenderTexture renderTexture0, RenderTexture renderTexture1)
         {
             source.LoadImage(bytes);
-            var renderTexture = Blitter.Blit(this.pixelFilterSettingsList, source, renderTexture0, renderTexture1);
+            var renderTexture = Blitter.Blit(this.filterSettingsList, source, renderTexture0, renderTexture1);
 
             var oldRenderTexture = RenderTexture.active;
             RenderTexture.active = renderTexture;

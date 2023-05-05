@@ -9,7 +9,7 @@ namespace akanevrc.TextureProxy
     {
         public static readonly string filterMaterialPath = "Assets/akanevrc/TextureProxy/Editor/Shaders/Filter.mat";
 
-        public static RenderTexture Blit(IEnumerable<PixelFilterSettings> settingsList, Texture source, RenderTexture dest0, RenderTexture dest1)
+        public static RenderTexture Blit(IEnumerable<FilterSettings> settingsList, Texture source, RenderTexture dest0, RenderTexture dest1)
         {
             var material = AssetDatabase.LoadAssetAtPath<Material>(Blitter.filterMaterialPath);
 
@@ -30,7 +30,7 @@ namespace akanevrc.TextureProxy
 
         private static void ResetMaterial(Material material)
         {
-            var settings = new PixelFilterSettings() { toggle = true, mode = PixelFilterMode.Normal, color = new Color(0F, 0F, 0F, 0F) };
+            var settings = new FilterSettings() { toggle = true, mode = FilterMode.Normal, color = new Color(0F, 0F, 0F, 0F) };
             InitMaterial(material, settings);
         }
 
@@ -40,18 +40,18 @@ namespace akanevrc.TextureProxy
             Graphics.Blit(source, dest, material);
         }
 
-        private static void InitMaterial(Material material, PixelFilterSettings settings)
+        private static void InitMaterial(Material material, FilterSettings settings)
         {
             EnableKeyword(material, settings);
             material.SetColor("_Color", settings.color);
         }
 
-        private static void EnableKeyword(Material material, PixelFilterSettings settings)
+        private static void EnableKeyword(Material material, FilterSettings settings)
         {
-            foreach (var modeObj in Enum.GetValues(typeof(PixelFilterMode)))
+            foreach (var modeObj in Enum.GetValues(typeof(FilterMode)))
             {
-                var mode = (PixelFilterMode)modeObj;
-                var keyword = $"_MODE_{Enum.GetName(typeof(PixelFilterMode), mode).ToUpper()}";
+                var mode = (FilterMode)modeObj;
+                var keyword = $"_MODE_{Enum.GetName(typeof(FilterMode), mode).ToUpper()}";
                 if (mode == settings.mode)
                 {
                     material.SetFloat("_Mode", (float)mode);

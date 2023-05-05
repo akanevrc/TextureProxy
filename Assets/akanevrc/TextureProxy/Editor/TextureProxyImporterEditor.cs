@@ -13,7 +13,7 @@ namespace akanevrc.TextureProxy
         public static readonly Vector2 previewTextureSize = new Vector2(64F, 64F);
         public static readonly float previewTextureSpace = 8F;
 
-        private SerializedProperty pixelFilterSettingsList;
+        private SerializedProperty filterSettingsList;
         private SerializedProperty sourceTextureInformation;
         private SerializedProperty textureImporterSettings;
         private SerializedProperty textureImporterPlatformSettings;
@@ -26,7 +26,7 @@ namespace akanevrc.TextureProxy
         public override void OnEnable()
         {
             base.OnEnable();
-            this.pixelFilterSettingsList = this.serializedObject.FindProperty(nameof(this.pixelFilterSettingsList));
+            this.filterSettingsList = this.serializedObject.FindProperty(nameof(this.filterSettingsList));
             this.sourceTextureInformation = this.serializedObject.FindProperty(nameof(this.sourceTextureInformation));
             this.textureImporterSettings = this.serializedObject.FindProperty(nameof(this.textureImporterSettings));
             this.textureImporterPlatformSettings = this.serializedObject.FindProperty(nameof(this.textureImporterPlatformSettings));
@@ -69,7 +69,7 @@ namespace akanevrc.TextureProxy
 
             var importer = (TextureProxyImporter)this.target;
             this.sourceTexture.LoadImage(bytes);
-            this.previewTexture = Blitter.Blit(importer.pixelFilterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
+            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
         }
 
         public override void OnDisable()
@@ -112,7 +112,7 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            PixelFilterSettingsList(this.pixelFilterSettingsList);
+            FilterSettingsList(this.filterSettingsList);
 
             EditorGUILayout.Space();
 
@@ -132,13 +132,13 @@ namespace akanevrc.TextureProxy
 
             if (changed)
             {
-                this.previewTexture = Blitter.Blit(importer.pixelFilterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
+                this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
             }
 
             base.ApplyRevertGUI();
         }
 
-        private void PixelFilterSettingsList(SerializedProperty settingsList)
+        private void FilterSettingsList(SerializedProperty settingsList)
         {
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
@@ -150,7 +150,7 @@ namespace akanevrc.TextureProxy
                 var toggle = settings.FindPropertyRelative("toggle");
 
                 toggle.boolValue = EditorGUILayout.BeginToggleGroup($"Layer {i}", toggle.boolValue);
-                PixelFilterSettingsFields(settings);
+                FilterSettingsFields(settings);
                 EditorGUILayout.EndToggleGroup();
 
                 if (i < settingsList.arraySize - 1 && GUILayout.Button("Move Up"))
@@ -194,12 +194,12 @@ namespace akanevrc.TextureProxy
             }
         }
 
-        private void PixelFilterSettingsFields(SerializedProperty settings)
+        private void FilterSettingsFields(SerializedProperty settings)
         {
             var mode = settings.FindPropertyRelative("mode");
             var color = settings.FindPropertyRelative("color");
 
-            mode.intValue = (int)(PixelFilterMode)EditorGUILayout.EnumPopup("Mode", (PixelFilterMode)mode.intValue);
+            mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
             color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
         }
 
@@ -276,7 +276,7 @@ namespace akanevrc.TextureProxy
                 EditorGUI.indentLevel--;
             }
             wrapMode.intValue = (int)(TextureWrapMode)EditorGUILayout.EnumPopup("Wrap Mode", (TextureWrapMode)wrapMode.intValue);
-            filterMode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Filter Mode", (FilterMode)filterMode.intValue);
+            filterMode.intValue = (int)(UnityEngine.FilterMode)EditorGUILayout.EnumPopup("Filter Mode", (UnityEngine.FilterMode)filterMode.intValue);
             aniso.intValue = EditorGUILayout.IntSlider("Aniso Level", aniso.intValue, 0, 16);
         }
 
