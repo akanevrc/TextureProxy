@@ -234,7 +234,7 @@ namespace akanevrc.TextureProxy
             var filterMode = settings.FindPropertyRelative("filterMode");
             var aniso = settings.FindPropertyRelative("aniso");
 
-            sRGBTexture.boolValue = EditorGUILayout.Toggle("sRGB Texture", sRGBTexture.boolValue);
+            sRGBTexture.boolValue = EditorGUILayout.Toggle("sRGB (Color Texture)", sRGBTexture.boolValue);
             alphaSource.intValue = (int)(TextureImporterAlphaSource)EditorGUILayout.EnumPopup("Alpha Source", (TextureImporterAlphaSource)alphaSource.intValue);
             if ((TextureImporterAlphaSource)alphaSource.intValue != TextureImporterAlphaSource.None)
             {
@@ -242,53 +242,60 @@ namespace akanevrc.TextureProxy
                 alphaIsTransparency.boolValue = EditorGUILayout.Toggle("Alpha Is Transparency", alphaIsTransparency.boolValue);
                 EditorGUI.indentLevel--;
             }
-            readable.boolValue = EditorGUILayout.Toggle("Readable", readable.boolValue);
+            readable.boolValue = EditorGUILayout.Toggle("Read/Write Enabled", readable.boolValue);
             streamingMipmaps.boolValue = EditorGUILayout.Toggle("Streaming Mipmaps", streamingMipmaps.boolValue);
             if (streamingMipmaps.boolValue)
             {
                 EditorGUI.indentLevel++;
-                streamingMipmapsPriority.intValue = EditorGUILayout.IntField("Streaming Mipmaps Priority", streamingMipmapsPriority.intValue);
+                streamingMipmapsPriority.intValue = EditorGUILayout.IntField("Mip Map Priority", streamingMipmapsPriority.intValue);
                 EditorGUI.indentLevel--;
             }
-            mipmapEnabled.boolValue = EditorGUILayout.Toggle("Mipmap Enabled", mipmapEnabled.boolValue);
+            mipmapEnabled.boolValue = EditorGUILayout.Toggle("Generate Mip Maps", mipmapEnabled.boolValue);
             if (mipmapEnabled.boolValue)
             {
                 EditorGUI.indentLevel++;
-                borderMipmap.boolValue = EditorGUILayout.Toggle("Border Mipmap", borderMipmap.boolValue);
-                mipmapFilter.intValue = (int)(TextureImporterMipFilter)EditorGUILayout.EnumPopup("Mipmap Filter", (TextureImporterMipFilter)mipmapFilter.intValue);
+                borderMipmap.boolValue = EditorGUILayout.Toggle("Border Mip Maps", borderMipmap.boolValue);
+                mipmapFilter.intValue = (int)(TextureImporterMipFilter)EditorGUILayout.EnumPopup("Mip Map Filtering", (TextureImporterMipFilter)mipmapFilter.intValue);
                 mipMapsPreserveCoverage.boolValue = EditorGUILayout.Toggle("Mip Maps Preserve Coverage", mipMapsPreserveCoverage.boolValue);
                 if (mipMapsPreserveCoverage.boolValue)
                 {
                     EditorGUI.indentLevel++;
-                    alphaTestReferenceValue.floatValue = EditorGUILayout.FloatField("Alpha Test Reference Value", alphaTestReferenceValue.floatValue);
+                    alphaTestReferenceValue.floatValue = EditorGUILayout.FloatField("Alpha Cutoff Value", alphaTestReferenceValue.floatValue);
                     EditorGUI.indentLevel--;
                 }
-                fadeOut.boolValue = EditorGUILayout.Toggle("Fade Out", fadeOut.boolValue);
+                fadeOut.boolValue = EditorGUILayout.Toggle("Fadeout Mip Maps", fadeOut.boolValue);
                 if (fadeOut.boolValue)
                 {
                     EditorGUI.indentLevel++;
-                    mipmapFadeDistanceStart.intValue = EditorGUILayout.IntSlider("Mipmap Fade Distance Start", mipmapFadeDistanceStart.intValue, 0, mipmapFadeDistanceEnd.intValue);
-                    mipmapFadeDistanceEnd.intValue = EditorGUILayout.IntSlider("Mipmap Fade Distance End", mipmapFadeDistanceEnd.intValue, mipmapFadeDistanceStart.intValue, 10);
+                    mipmapFadeDistanceStart.intValue = EditorGUILayout.IntSlider("Fade Range Start", mipmapFadeDistanceStart.intValue, 0, mipmapFadeDistanceEnd.intValue);
+                    mipmapFadeDistanceEnd.intValue = EditorGUILayout.IntSlider("Fade Range End", mipmapFadeDistanceEnd.intValue, mipmapFadeDistanceStart.intValue, 10);
                     EditorGUI.indentLevel--;
                 }
                 EditorGUI.indentLevel--;
             }
             wrapMode.intValue = (int)(TextureWrapMode)EditorGUILayout.EnumPopup("Wrap Mode", (TextureWrapMode)wrapMode.intValue);
             filterMode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Filter Mode", (FilterMode)filterMode.intValue);
-            aniso.intValue = EditorGUILayout.IntSlider("Aniso", aniso.intValue, 0, 16);
+            aniso.intValue = EditorGUILayout.IntSlider("Aniso Level", aniso.intValue, 0, 16);
         }
 
         private void TextureImporterPlatformSettingsFields(SerializedProperty settings)
         {
-            var format = settings.FindPropertyRelative("format");
             var maxTextureSize = settings.FindPropertyRelative("maxTextureSize");
             var resizeAlgorithm = settings.FindPropertyRelative("resizeAlgorithm");
+            var format = settings.FindPropertyRelative("format");
             var textureCompression = settings.FindPropertyRelative("textureCompression");
+            var crunchedCompression = settings.FindPropertyRelative("crunchedCompression");
 
-            format.intValue = (int)(TextureImporterFormat)EditorGUILayout.EnumPopup("Texture Type", (TextureImporterFormat)format.intValue);
-            maxTextureSize.intValue = EditorGUILayout.IntField("Texture Shape", maxTextureSize.intValue);
-            resizeAlgorithm.intValue = (int)(TextureResizeAlgorithm)EditorGUILayout.EnumPopup("sRGB Texture", (TextureResizeAlgorithm)resizeAlgorithm.intValue);
-            textureCompression.intValue = (int)(TextureImporterCompression)EditorGUILayout.EnumPopup("Alpha Source", (TextureImporterCompression)textureCompression.intValue);
+            maxTextureSize.intValue = EditorGUILayout.IntField("Max Size", maxTextureSize.intValue);
+            resizeAlgorithm.intValue = (int)(TextureResizeAlgorithm)EditorGUILayout.EnumPopup("Resize Algorithm", (TextureResizeAlgorithm)resizeAlgorithm.intValue);
+            format.intValue = (int)(TextureImporterFormat)EditorGUILayout.EnumPopup("Format", (TextureImporterFormat)format.intValue);
+            textureCompression.intValue = (int)(TextureImporterCompression)EditorGUILayout.EnumPopup("Texture Compression", (TextureImporterCompression)textureCompression.intValue);
+            if ((TextureImporterCompression)textureCompression.intValue != TextureImporterCompression.Uncompressed)
+            {
+                EditorGUI.indentLevel++;
+                crunchedCompression.boolValue = EditorGUILayout.Toggle("Use Crunch Compression", crunchedCompression.boolValue);
+                EditorGUI.indentLevel--;
+            }
         }
     }
 }

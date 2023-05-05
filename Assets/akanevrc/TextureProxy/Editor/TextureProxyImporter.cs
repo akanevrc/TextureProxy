@@ -88,19 +88,21 @@ namespace akanevrc.TextureProxy
     [Serializable]
     public struct TextureProxyImporterPlatformSettings
     {
-        public TextureImporterFormat format;
         public int maxTextureSize;
         public TextureResizeAlgorithm resizeAlgorithm;
+        public TextureImporterFormat format;
         public TextureImporterCompression textureCompression;
+        public bool crunchedCompression;
 
         public static explicit operator TextureImporterPlatformSettings(TextureProxyImporterPlatformSettings settings)
         {
             return new TextureImporterPlatformSettings()
             {
-                format = settings.format,
                 maxTextureSize = settings.maxTextureSize,
                 resizeAlgorithm = settings.resizeAlgorithm,
-                textureCompression = settings.textureCompression
+                format = settings.format,
+                textureCompression = settings.textureCompression,
+                crunchedCompression = settings.crunchedCompression
             };
         }
     }
@@ -146,10 +148,11 @@ namespace akanevrc.TextureProxy
         public TextureProxyImporterPlatformSettings textureImporterPlatformSettings =
             new TextureProxyImporterPlatformSettings()
             {
-                format = TextureImporterFormat.Automatic,
-                maxTextureSize = 1024,
+                maxTextureSize = 2048,
                 resizeAlgorithm = TextureResizeAlgorithm.Mitchell,
-                textureCompression = TextureImporterCompression.Compressed
+                format = TextureImporterFormat.Automatic,
+                textureCompression = TextureImporterCompression.Compressed,
+                crunchedCompression = false
             };
 
         public override void OnImportAsset(AssetImportContext ctx)
