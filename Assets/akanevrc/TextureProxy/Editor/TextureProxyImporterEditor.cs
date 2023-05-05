@@ -216,10 +216,6 @@ namespace akanevrc.TextureProxy
 
         private void TextureImporterSettingsFields(SerializedProperty settings)
         {
-            var textureShape = settings.FindPropertyRelative("textureShape");
-            var generateCubemap = settings.FindPropertyRelative("generateCubemap");
-            var cubemapConvolution = settings.FindPropertyRelative("cubemapConvolution");
-            var seamlessCubemap = settings.FindPropertyRelative("seamlessCubemap");
             var sRGBTexture = settings.FindPropertyRelative("sRGBTexture");
             var alphaSource = settings.FindPropertyRelative("alphaSource");
             var alphaIsTransparency = settings.FindPropertyRelative("alphaIsTransparency");
@@ -238,15 +234,6 @@ namespace akanevrc.TextureProxy
             var filterMode = settings.FindPropertyRelative("filterMode");
             var aniso = settings.FindPropertyRelative("aniso");
 
-            textureShape.intValue = (int)(TextureImporterShape)EditorGUILayout.EnumPopup("Texture Shape", (TextureImporterShape)textureShape.intValue);
-            if ((TextureImporterShape)textureShape.intValue == TextureImporterShape.TextureCube)
-            {
-                EditorGUI.indentLevel++;
-                generateCubemap.intValue = (int)(TextureImporterGenerateCubemap)EditorGUILayout.EnumPopup("Generate Cubemap", (TextureImporterGenerateCubemap)generateCubemap.intValue);
-                cubemapConvolution.intValue = (int)(TextureImporterCubemapConvolution)EditorGUILayout.EnumPopup("Cubemap Convolution", (TextureImporterCubemapConvolution)cubemapConvolution.intValue);
-                seamlessCubemap.boolValue = EditorGUILayout.Toggle("Seamless Cubemap", seamlessCubemap.boolValue);
-                EditorGUI.indentLevel--;
-            }
             sRGBTexture.boolValue = EditorGUILayout.Toggle("sRGB Texture", sRGBTexture.boolValue);
             alphaSource.intValue = (int)(TextureImporterAlphaSource)EditorGUILayout.EnumPopup("Alpha Source", (TextureImporterAlphaSource)alphaSource.intValue);
             if ((TextureImporterAlphaSource)alphaSource.intValue != TextureImporterAlphaSource.None)
