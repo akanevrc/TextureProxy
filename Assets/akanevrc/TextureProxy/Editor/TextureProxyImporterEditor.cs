@@ -13,7 +13,6 @@ namespace akanevrc.TextureProxy
         public static readonly Vector2 previewTextureSize = new Vector2(64F, 64F);
         public static readonly float previewTextureSpace = 8F;
 
-        private TextureProxyImporter importer;
         private SerializedProperty pixelFilterSettingsList;
         private SerializedProperty sourceTextureInformation;
         private SerializedProperty textureImporterSettings;
@@ -25,7 +24,6 @@ namespace akanevrc.TextureProxy
         public override void OnEnable()
         {
             base.OnEnable();
-            this.importer = (TextureProxyImporter)this.target;
             this.pixelFilterSettingsList = this.serializedObject.FindProperty(nameof(this.pixelFilterSettingsList));
             this.sourceTextureInformation = this.serializedObject.FindProperty(nameof(this.sourceTextureInformation));
             this.textureImporterSettings = this.serializedObject.FindProperty(nameof(this.textureImporterSettings));
@@ -60,9 +58,10 @@ namespace akanevrc.TextureProxy
                 return;
             }
 
+            var importer = (TextureProxyImporter)this.target;
             this.sourceTexture.LoadImage(bytes);
             this.previewTexture.LoadImage(bytes);
-            this.previewTexture.SetPixels(PixelFilter.FilterAll(this.importer.pixelFilterSettingsList, this.previewTexture.GetPixels()));
+            this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.previewTexture.GetPixels()));
             this.previewTexture.Apply();
         }
 
@@ -83,6 +82,11 @@ namespace akanevrc.TextureProxy
 
         public override void OnInspectorGUI()
         {
+            var importer = (TextureProxyImporter)this.target;
+
+            var changed = false;
+            EditorGUI.BeginChangeCheck();
+
             var oldFontStyle = EditorStyles.label.fontStyle;
             EditorStyles.label.fontStyle = FontStyle.Bold;
             EditorGUILayout.LabelField("Texture Proxy Import Settings");
@@ -110,20 +114,21 @@ namespace akanevrc.TextureProxy
             
             TextureImporterPlatformSettingsFields(this.textureImporterPlatformSettings);
 
-            serializedObject.ApplyModifiedProperties();
-            base.ApplyRevertGUI();
+            if (EditorGUI.EndChangeCheck()) changed = true;
 
-            if (EditorGUI.EndChangeCheck())
+            serializedObject.ApplyModifiedProperties();
+
+            if (changed)
             {
-                this.previewTexture.SetPixels(PixelFilter.FilterAll(this.importer.pixelFilterSettingsList, this.sourceTexture.GetPixels()));
+                this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.sourceTexture.GetPixels()));
                 this.previewTexture.Apply();
             }
+
+            base.ApplyRevertGUI();
         }
 
         private void PixelFilterSettingsList(SerializedProperty settingsList)
         {
-            EditorGUI.BeginChangeCheck();
-
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
             var insertingIndex = new List<int>();
