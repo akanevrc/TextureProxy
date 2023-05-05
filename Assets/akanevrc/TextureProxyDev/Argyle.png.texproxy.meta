@@ -8,7 +8,7 @@ ScriptedImporter:
   assetBundleName: 
   assetBundleVariant: 
   script: {fileID: 11500000, guid: 4abf1bbaaedb39340971e5070da42611, type: 3}
-  pixelFilterSettingsList: []
+  filterSettingsList: []
   sourceTextureInformation:
     width: 1024
     height: 1024
