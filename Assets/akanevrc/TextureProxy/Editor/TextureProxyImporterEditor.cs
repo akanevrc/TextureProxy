@@ -92,15 +92,7 @@ namespace akanevrc.TextureProxy
 
             var controlRect = EditorGUILayout.GetControlRect(false, TextureProxyImporterEditor.previewTextureSize.y);
             var previewTextureRect = new Rect(controlRect.position, TextureProxyImporterEditor.previewTextureSize);
-            var sourceTextureRect =
-                new Rect
-                (
-                    controlRect.position +
-                        new Vector2(TextureProxyImporterEditor.previewTextureSize.x + TextureProxyImporterEditor.previewTextureSpace, 0F),
-                    TextureProxyImporterEditor.previewTextureSize
-                );
             EditorGUI.DrawPreviewTexture(previewTextureRect, this.previewTexture);
-            EditorGUI.DrawPreviewTexture(sourceTextureRect, this.sourceTexture);
 
             EditorGUILayout.Space();
 
