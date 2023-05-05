@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Unity.Collections;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
@@ -167,6 +166,19 @@ namespace akanevrc.TextureProxy
                 return;
             }
 
+            var renderTexture0 = RenderTexture.GetTemporary
+            (
+                this.sourceTextureInformation.width,
+                this.sourceTextureInformation.height,
+                0
+            );
+            var renderTexture1 = RenderTexture.GetTemporary
+            (
+                this.sourceTextureInformation.width,
+                this.sourceTextureInformation.height,
+                0
+            );
+
             var texture =
                 new Texture2D
                 (
@@ -178,8 +190,7 @@ namespace akanevrc.TextureProxy
                 );
             try
             {
-                texture.LoadImage(bytes);
-                var pixels = PixelFilter.FilterAll(this.pixelFilterSettingsList, texture.GetPixels());
+                ApplyFilters(bytes, texture, renderTexture0, renderTexture1);
 
                 var output = TextureGenerator.GenerateTexture
                 (
@@ -191,15 +202,29 @@ namespace akanevrc.TextureProxy
                         sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
                         textureImporterSettings = (TextureImporterSettings)textureImporterSettings
                     },
-                    new NativeArray<Color32>(pixels.Select(color => (Color32)color).ToArray(), Allocator.Temp)
+                    new NativeArray<Color32>(texture.GetPixels32(), Allocator.Temp)
                 );
                 ctx.AddObjectToAsset("Texture", output.texture);
                 ctx.SetMainObject(output.texture);
             }
             finally
             {
+                RenderTexture.ReleaseTemporary(renderTexture0);
+                RenderTexture.ReleaseTemporary(renderTexture1);
                 UnityEngine.Object.DestroyImmediate(texture);
             }
+        }
+
+        private void ApplyFilters(byte[] bytes, Texture2D source, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        {
+            source.LoadImage(bytes);
+            var renderTexture = Blitter.Blit(this.pixelFilterSettingsList, source, renderTexture0, renderTexture1);
+
+            var oldRenderTexture = RenderTexture.active;
+            RenderTexture.active = renderTexture;
+            source.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
+            source.Apply();
+            RenderTexture.active = oldRenderTexture;
         }
     }
 }

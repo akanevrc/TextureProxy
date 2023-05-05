@@ -18,7 +18,9 @@ namespace akanevrc.TextureProxy
         private SerializedProperty textureImporterSettings;
         private SerializedProperty textureImporterPlatformSettings;
 
-        private Texture2D previewTexture;
+        private RenderTexture previewTexture;
+        private RenderTexture renderTexture0;
+        private RenderTexture renderTexture1;
         private Texture2D sourceTexture;
 
         public override void OnEnable()
@@ -29,14 +31,19 @@ namespace akanevrc.TextureProxy
             this.textureImporterSettings = this.serializedObject.FindProperty(nameof(this.textureImporterSettings));
             this.textureImporterPlatformSettings = this.serializedObject.FindProperty(nameof(this.textureImporterPlatformSettings));
 
-            this.previewTexture =
-                new Texture2D
+            this.renderTexture0 =
+                RenderTexture.GetTemporary
                 (
                     (int)TextureProxyImporterEditor.previewTextureSize.x,
                     (int)TextureProxyImporterEditor.previewTextureSize.y,
-                    TextureFormat.RGBA32,
-                    0,
-                    false
+                    0
+                );
+            this.renderTexture1 =
+                RenderTexture.GetTemporary
+                (
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
+                    0
                 );
             this.sourceTexture =
                 new Texture2D
@@ -47,6 +54,8 @@ namespace akanevrc.TextureProxy
                     0,
                     false
                 );
+
+            this.previewTexture = this.renderTexture0;
 
             var bytes = (byte[])null;
             try
@@ -60,17 +69,20 @@ namespace akanevrc.TextureProxy
 
             var importer = (TextureProxyImporter)this.target;
             this.sourceTexture.LoadImage(bytes);
-            this.previewTexture.LoadImage(bytes);
-            this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.previewTexture.GetPixels()));
-            this.previewTexture.Apply();
+            this.previewTexture = Blitter.Blit(importer.pixelFilterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
         }
 
         public override void OnDisable()
         {
-            if (this.previewTexture != null)
+            if (this.renderTexture0 != null)
             {
-                UnityEngine.Object.DestroyImmediate(this.previewTexture);
-                this.previewTexture = null;
+                RenderTexture.ReleaseTemporary(this.renderTexture0);
+                this.renderTexture0 = null;
+            }
+            if (this.renderTexture1 != null)
+            {
+                RenderTexture.ReleaseTemporary(this.renderTexture1);
+                this.renderTexture1 = null;
             }
             if (this.sourceTexture != null)
             {
@@ -120,8 +132,7 @@ namespace akanevrc.TextureProxy
 
             if (changed)
             {
-                this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.sourceTexture.GetPixels()));
-                this.previewTexture.Apply();
+                this.previewTexture = Blitter.Blit(importer.pixelFilterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
             }
 
             base.ApplyRevertGUI();
