@@ -186,16 +186,10 @@ namespace akanevrc.TextureProxy
         private void PixelFilterSettingsFields(SerializedProperty settings)
         {
             var mode = settings.FindPropertyRelative("mode");
-            var r = settings.FindPropertyRelative("r");
-            var g = settings.FindPropertyRelative("g");
-            var b = settings.FindPropertyRelative("b");
-            var a = settings.FindPropertyRelative("a");
+            var color = settings.FindPropertyRelative("color");
 
             mode.intValue = (int)(PixelFilterMode)EditorGUILayout.EnumPopup("Mode", (PixelFilterMode)mode.intValue);
-            r.floatValue = EditorGUILayout.Slider("R", r.floatValue, 0F, 1F);
-            g.floatValue = EditorGUILayout.Slider("G", g.floatValue, 0F, 1F);
-            b.floatValue = EditorGUILayout.Slider("B", b.floatValue, 0F, 1F);
-            a.floatValue = EditorGUILayout.Slider("A", a.floatValue, 0F, 1F);
+            color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
         }
 
         private void SourceTextureInformationFields(SerializedProperty information)

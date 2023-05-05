@@ -40,15 +40,7 @@ namespace akanevrc.TextureProxy
     {
         public bool toggle;
         public PixelFilterMode mode;
-        public float r;
-        public float g;
-        public float b;
-        public float a;
-
-        public Color ParamsToColor()
-        {
-            return new Color(this.r, this.g, this.b, this.a);
-        }
+        public Color color;
     }
 
     public static class PixelFilter
@@ -131,10 +123,9 @@ namespace akanevrc.TextureProxy
         private static Color[] OnePixelFilter(PixelFilterSettings settings, Color[] pixels, Func<Color, Color, Color> op)
         {
             var filtered = (Color[])pixels.Clone();
-            var filter = settings.ParamsToColor();
             for (var i = 0; i < pixels.Length; i++)
             {
-                filtered[i] = op(filter, pixels[i]);
+                filtered[i] = op(settings.color, pixels[i]);
             }
             return filtered;
         }
