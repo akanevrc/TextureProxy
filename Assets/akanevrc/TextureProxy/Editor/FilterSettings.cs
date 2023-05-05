@@ -39,6 +39,12 @@ namespace akanevrc.TextureProxy
     {
         public bool toggle;
         public FilterMode mode;
+        public Texture2D colorTexture;
+        public Vector2 colorTextureScale;
+        public Vector2 colorTextureOffset;
+        public Texture2D maskTexture;
+        public Vector2 maskTextureScale;
+        public Vector2 maskTextureOffset;
         public Color color;
     }
 }

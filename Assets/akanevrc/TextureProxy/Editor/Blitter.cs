@@ -30,7 +30,18 @@ namespace akanevrc.TextureProxy
 
         private static void ResetMaterial(Material material)
         {
-            var settings = new FilterSettings() { toggle = true, mode = FilterMode.Normal, color = new Color(0F, 0F, 0F, 0F) };
+            var settings = new FilterSettings()
+            {
+                toggle = true,
+                mode = FilterMode.Normal,
+                colorTexture = null,
+                colorTextureScale = new Vector2(1F, 1F),
+                colorTextureOffset = new Vector2(0F, 0F),
+                maskTexture = null,
+                maskTextureScale = new Vector2(1F, 1F),
+                maskTextureOffset = new Vector2(0F, 0F),
+                color = new Color(0F, 0F, 0F, 0F)
+            };
             InitMaterial(material, settings);
         }
 
@@ -43,6 +54,12 @@ namespace akanevrc.TextureProxy
         private static void InitMaterial(Material material, FilterSettings settings)
         {
             EnableKeyword(material, settings);
+            material.SetTexture("_SubTex", settings.colorTexture);
+            material.SetTextureScale("_SubTex", settings.colorTextureScale);
+            material.SetTextureOffset("_SubTex", settings.colorTextureOffset);
+            material.SetTexture("_Mask", settings.maskTexture);
+            material.SetTextureScale("_Mask", settings.maskTextureScale);
+            material.SetTextureOffset("_Mask", settings.maskTextureOffset);
             material.SetColor("_Color", settings.color);
         }
 

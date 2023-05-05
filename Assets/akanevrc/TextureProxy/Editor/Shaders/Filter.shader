@@ -7,7 +7,8 @@ Shader "akanevrc_TextureProxy/Filter"
 
         _MainTex ("Main Texture", 2D) = "white" {}
         _SubTex ("Sub Texture", 2D) = "white" {}
-        _Color ("Color", Color) = (0, 0, 0, 0)
+        _Mask ("Mask", 2D) = "white" {}
+        _Color ("Color", Color) = (1, 1, 1, 1)
     }
     SubShader
     {
@@ -35,8 +36,7 @@ Shader "akanevrc_TextureProxy/Filter"
 
             struct v2f
             {
-                float2 uvMain : TEXCOORD0;
-                float2 uvSub : TEXCOORD1;
+                float2 uv : TEXCOORD0;
                 float4 pos : SV_POSITION;
             };
 
@@ -44,14 +44,15 @@ Shader "akanevrc_TextureProxy/Filter"
             float4 _MainTex_ST;
             sampler2D _SubTex;
             float4 _SubTex_ST;
+            sampler2D _Mask;
+            float4 _Mask_ST;
             half4 _Color;
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.pos = UnityObjectToClipPos(v.vertex);
-                o.uvMain = TRANSFORM_TEX(v.uv, _MainTex);
-                o.uvSub = TRANSFORM_TEX(v.uv, _SubTex);
+                o.uv = v.uv;
                 return o;
             }
 
@@ -59,9 +60,10 @@ Shader "akanevrc_TextureProxy/Filter"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                half4 sub = tex2D(_SubTex, i.uvSub);
-                half4 ca = half4(sub.rgb * sub.a * _Color.rgb * _Color.a, sub.a * _Color.a);
-                half4 cb = tex2D(_MainTex, i.uvMain);
+                half4 sub = tex2D(_SubTex, TRANSFORM_TEX(i.uv, _SubTex));
+                half4 mask = tex2D(_Mask, TRANSFORM_TEX(i.uv, _Mask));
+                half4 ca = half4(sub.rgb * sub.a * _Color.rgb * _Color.a, sub.a * mask.r * _Color.a);
+                half4 cb = tex2D(_MainTex, TRANSFORM_TEX(i.uv, _MainTex));
             #ifdef _MODE_NORMAL
                 return BLEND(ca, cb);
             #elif _MODE_CLEAR

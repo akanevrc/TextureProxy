@@ -182,6 +182,7 @@ namespace akanevrc.TextureProxy
             foreach (var index in insertingIndex)
             {
                 settingsList.InsertArrayElementAtIndex(index);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(index));
             }
             foreach (var index in deletingIndex)
             {
@@ -191,16 +192,63 @@ namespace akanevrc.TextureProxy
             if (GUILayout.Button("Add"))
             {
                 settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
             }
+        }
+
+        private void InitFilterSettings(SerializedProperty settings)
+        {
+            var toggle = settings.FindPropertyRelative("toggle");
+            var mode = settings.FindPropertyRelative("mode");
+            var colorTexture = settings.FindPropertyRelative("colorTexture");
+            var colorTextureScale = settings.FindPropertyRelative("colorTextureScale");
+            var colorTextureOffset = settings.FindPropertyRelative("colorTextureOffset");
+            var maskTexture = settings.FindPropertyRelative("maskTexture");
+            var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
+            var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
+            var color = settings.FindPropertyRelative("color");
+
+            toggle.boolValue = true;
+            mode.intValue = (int)FilterMode.Multiply;
+            colorTexture.objectReferenceValue = null;
+            colorTextureScale.vector2Value = new Vector2(1F, 1F);
+            colorTextureOffset.vector2Value = new Vector2(0F, 0F);
+            maskTexture.objectReferenceValue = null;
+            maskTextureScale.vector2Value = new Vector2(1F, 1F);
+            maskTextureOffset.vector2Value = new Vector2(0F, 0F);
+            color.colorValue = Color.white;
         }
 
         private void FilterSettingsFields(SerializedProperty settings)
         {
             var mode = settings.FindPropertyRelative("mode");
+            var colorTexture = settings.FindPropertyRelative("colorTexture");
+            var colorTextureScale = settings.FindPropertyRelative("colorTextureScale");
+            var colorTextureOffset = settings.FindPropertyRelative("colorTextureOffset");
+            var maskTexture = settings.FindPropertyRelative("maskTexture");
+            var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
+            var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
 
             mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
+            EditorGUILayout.Space();
+            TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
+            EditorGUILayout.Space();
+            TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
+            EditorGUILayout.Space();
             color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+        }
+
+        private void TextureField(string label, SerializedProperty texture, SerializedProperty scale, SerializedProperty offset)
+        {
+            EditorGUILayout.LabelField(label);
+            EditorGUI.indentLevel++;
+            var rect = EditorGUILayout.GetControlRect(true, 0F);
+            rect.height = 42F;
+            texture.objectReferenceValue = EditorGUI.ObjectField(rect, "", texture.objectReferenceValue, typeof(Texture2D), false);
+            scale.vector2Value = EditorGUILayout.Vector2Field("Tiling", scale.vector2Value);
+            offset.vector2Value = EditorGUILayout.Vector2Field("Offset", offset.vector2Value);
+            EditorGUI.indentLevel--;
         }
 
         private void SourceTextureInformationFields(SerializedProperty information)
