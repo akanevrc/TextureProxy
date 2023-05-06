@@ -22,6 +22,7 @@ namespace akanevrc.TextureProxy
         private RenderTexture renderTexture0;
         private RenderTexture renderTexture1;
         private Texture2D sourceTexture;
+        private bool importSettingsFoldout;
 
         public override void OnEnable()
         {
@@ -116,15 +117,19 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            SourceTextureInformationFields(this.sourceTextureInformation);
+            this.importSettingsFoldout = EditorGUILayout.Foldout(this.importSettingsFoldout, "Texture Import Settings");
+            if (this.importSettingsFoldout)
+            {
+                SourceTextureInformationFields(this.sourceTextureInformation);
 
-            EditorGUILayout.Space();
+                EditorGUILayout.Space();
 
-            TextureImporterSettingsFields(this.textureImporterSettings);
+                TextureImporterSettingsFields(this.textureImporterSettings);
 
-            EditorGUILayout.Space();
-            
-            TextureImporterPlatformSettingsFields(this.textureImporterPlatformSettings);
+                EditorGUILayout.Space();
+                
+                TextureImporterPlatformSettingsFields(this.textureImporterPlatformSettings);
+            }
 
             if (EditorGUI.EndChangeCheck()) changed = true;
 
