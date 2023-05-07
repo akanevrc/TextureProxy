@@ -23,6 +23,7 @@ ScriptedImporter:
     sRGBTexture: 1
     alphaSource: 1
     alphaIsTransparency: 0
+    npotScale: 1
     readable: 0
     streamingMipmaps: 1
     streamingMipmapsPriority: 0
