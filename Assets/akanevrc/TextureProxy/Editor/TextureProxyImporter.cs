@@ -39,6 +39,7 @@ namespace akanevrc.TextureProxy
         public bool sRGBTexture;
         public TextureImporterAlphaSource alphaSource;
         public bool alphaIsTransparency;
+        public TextureImporterNPOTScale npotScale;
         public bool readable;
         public bool streamingMipmaps;
         public int streamingMipmapsPriority;
@@ -66,6 +67,7 @@ namespace akanevrc.TextureProxy
                 sRGBTexture = settings.sRGBTexture,
                 alphaSource = settings.alphaSource,
                 alphaIsTransparency = settings.alphaIsTransparency,
+                npotScale = settings.npotScale,
                 readable = settings.readable,
                 streamingMipmaps = settings.streamingMipmaps,
                 streamingMipmapsPriority = settings.streamingMipmapsPriority,
@@ -129,6 +131,7 @@ namespace akanevrc.TextureProxy
                 sRGBTexture = true,
                 alphaSource = TextureImporterAlphaSource.FromInput,
                 alphaIsTransparency = false,
+                npotScale = TextureImporterNPOTScale.ToNearest,
                 readable = false,
                 streamingMipmaps = false,
                 streamingMipmapsPriority = 0,

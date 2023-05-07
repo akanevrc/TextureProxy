@@ -124,7 +124,7 @@ namespace akanevrc.TextureProxy
 
                 EditorGUILayout.Space();
 
-                TextureImporterSettingsFields(this.textureImporterSettings);
+                TextureImporterSettingsFields(this.textureImporterSettings, IsNPOT(this.sourceTextureInformation));
 
                 EditorGUILayout.Space();
                 
@@ -269,11 +269,19 @@ namespace akanevrc.TextureProxy
             hdr.boolValue = EditorGUILayout.Toggle("HDR", hdr.boolValue);
         }
 
-        private void TextureImporterSettingsFields(SerializedProperty settings)
+        private bool IsNPOT(SerializedProperty information)
+        {
+            var width = information.FindPropertyRelative("width");
+            var height = information.FindPropertyRelative("height");
+            return Mathf.NextPowerOfTwo(width.intValue) != width.intValue || Mathf.NextPowerOfTwo(height.intValue) != height.intValue;
+        }
+
+        private void TextureImporterSettingsFields(SerializedProperty settings, bool npot)
         {
             var sRGBTexture = settings.FindPropertyRelative("sRGBTexture");
             var alphaSource = settings.FindPropertyRelative("alphaSource");
             var alphaIsTransparency = settings.FindPropertyRelative("alphaIsTransparency");
+            var npotScale = settings.FindPropertyRelative("npotScale");
             var readable = settings.FindPropertyRelative("readable");
             var streamingMipmaps = settings.FindPropertyRelative("streamingMipmaps");
             var streamingMipmapsPriority = settings.FindPropertyRelative("streamingMipmapsPriority");
@@ -296,6 +304,10 @@ namespace akanevrc.TextureProxy
                 EditorGUI.indentLevel++;
                 alphaIsTransparency.boolValue = EditorGUILayout.Toggle("Alpha Is Transparency", alphaIsTransparency.boolValue);
                 EditorGUI.indentLevel--;
+            }
+            if (npot)
+            {
+                npotScale.intValue = (int)(TextureImporterNPOTScale)EditorGUILayout.EnumPopup("Non-Power of 2", (TextureImporterNPOTScale)npotScale.intValue);
             }
             readable.boolValue = EditorGUILayout.Toggle("Read/Write Enabled", readable.boolValue);
             streamingMipmaps.boolValue = EditorGUILayout.Toggle("Streaming Mipmaps", streamingMipmaps.boolValue);
