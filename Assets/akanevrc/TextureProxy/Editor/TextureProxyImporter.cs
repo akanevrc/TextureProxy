@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Unity.Collections;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
@@ -40,6 +39,7 @@ namespace akanevrc.TextureProxy
         public bool sRGBTexture;
         public TextureImporterAlphaSource alphaSource;
         public bool alphaIsTransparency;
+        public TextureImporterNPOTScale npotScale;
         public bool readable;
         public bool streamingMipmaps;
         public int streamingMipmapsPriority;
@@ -52,7 +52,7 @@ namespace akanevrc.TextureProxy
         public int mipmapFadeDistanceStart;
         public int mipmapFadeDistanceEnd;
         public TextureWrapMode wrapMode;
-        public FilterMode filterMode;
+        public UnityEngine.FilterMode filterMode;
         public int aniso;
 
         public static explicit operator TextureImporterSettings(TextureProxyImporterSettings settings)
@@ -67,6 +67,7 @@ namespace akanevrc.TextureProxy
                 sRGBTexture = settings.sRGBTexture,
                 alphaSource = settings.alphaSource,
                 alphaIsTransparency = settings.alphaIsTransparency,
+                npotScale = settings.npotScale,
                 readable = settings.readable,
                 streamingMipmaps = settings.streamingMipmaps,
                 streamingMipmapsPriority = settings.streamingMipmapsPriority,
@@ -110,7 +111,10 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
-        public List<PixelFilterSettings> pixelFilterSettingsList = new List<PixelFilterSettings>();
+        internal static Texture activeTexture;
+        internal static TextureImporter activeImporter;
+
+        public List<FilterSettings> filterSettingsList = new List<FilterSettings>();
         public SourceTextureProxyInformation sourceTextureInformation =
             new SourceTextureProxyInformation()
             {
@@ -130,8 +134,9 @@ namespace akanevrc.TextureProxy
                 sRGBTexture = true,
                 alphaSource = TextureImporterAlphaSource.FromInput,
                 alphaIsTransparency = false,
+                npotScale = TextureImporterNPOTScale.ToNearest,
                 readable = false,
-                streamingMipmaps = false,
+                streamingMipmaps = true,
                 streamingMipmapsPriority = 0,
                 mipmapEnabled = true,
                 borderMipmap = false,
@@ -142,7 +147,7 @@ namespace akanevrc.TextureProxy
                 mipmapFadeDistanceStart = 1,
                 mipmapFadeDistanceEnd = 3,
                 wrapMode = TextureWrapMode.Repeat,
-                filterMode = FilterMode.Bilinear,
+                filterMode = UnityEngine.FilterMode.Bilinear,
                 aniso = 1
             };
         public TextureProxyImporterPlatformSettings textureImporterPlatformSettings =
@@ -157,6 +162,13 @@ namespace akanevrc.TextureProxy
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
+            if (TextureProxyImporter.activeTexture != null && TextureProxyImporter.activeImporter != null)
+            {
+                ExtractSettings(TextureProxyImporter.activeTexture, TextureProxyImporter.activeImporter);
+                TextureProxyImporter.activeTexture = null;
+                TextureProxyImporter.activeImporter = null;
+            }
+
             var bytes = (byte[])null;
             try
             {
@@ -166,6 +178,19 @@ namespace akanevrc.TextureProxy
             {
                 return;
             }
+
+            var renderTexture0 = RenderTexture.GetTemporary
+            (
+                this.sourceTextureInformation.width,
+                this.sourceTextureInformation.height,
+                0
+            );
+            var renderTexture1 = RenderTexture.GetTemporary
+            (
+                this.sourceTextureInformation.width,
+                this.sourceTextureInformation.height,
+                0
+            );
 
             var texture =
                 new Texture2D
@@ -178,8 +203,7 @@ namespace akanevrc.TextureProxy
                 );
             try
             {
-                texture.LoadImage(bytes);
-                var pixels = PixelFilter.FilterAll(this.pixelFilterSettingsList, texture.GetPixels());
+                ApplyFilters(bytes, texture, renderTexture0, renderTexture1);
 
                 var output = TextureGenerator.GenerateTexture
                 (
@@ -191,15 +215,101 @@ namespace akanevrc.TextureProxy
                         sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
                         textureImporterSettings = (TextureImporterSettings)textureImporterSettings
                     },
-                    new NativeArray<Color32>(pixels.Select(color => (Color32)color).ToArray(), Allocator.Temp)
+                    new NativeArray<Color32>(texture.GetPixels32(), Allocator.Temp)
                 );
                 ctx.AddObjectToAsset("Texture", output.texture);
                 ctx.SetMainObject(output.texture);
             }
             finally
             {
+                RenderTexture.ReleaseTemporary(renderTexture0);
+                RenderTexture.ReleaseTemporary(renderTexture1);
                 UnityEngine.Object.DestroyImmediate(texture);
             }
+        }
+
+        private void ApplyFilters(byte[] bytes, Texture2D source, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        {
+            source.LoadImage(bytes);
+            var renderTexture = Blitter.Blit(this.filterSettingsList, source, renderTexture0, renderTexture1);
+
+            var oldRenderTexture = RenderTexture.active;
+            RenderTexture.active = renderTexture;
+            source.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
+            source.Apply();
+            RenderTexture.active = oldRenderTexture;
+        }
+
+        public static bool SupportSettings(TextureImporter importer, out string[] errors)
+        {
+            var errorList = new List<string>();
+
+            if (importer.textureType != TextureImporterType.Default)
+            {
+                errorList.Add("Texture type of TextureImporter must be 'Default'.");
+            }
+
+            if (importer.textureShape != TextureImporterShape.Texture2D)
+            {
+                errorList.Add("Texture shape of TextureImporter must be 'Texture2D'.");
+            }
+
+            if (importer.GetPlatformTextureSettings("Standalone").overridden || importer.GetPlatformTextureSettings("Android").overridden)
+            {
+                errorList.Add("Default platform texture settings must not be overridden.");
+            }
+
+            errors = errorList.ToArray();
+            return errors.Length == 0;
+        }
+
+        public void ExtractSettings(Texture texture, TextureImporter importer)
+        {
+            this.sourceTextureInformation =
+                new SourceTextureProxyInformation()
+                {
+                    width = texture.width,
+                    height = texture.height,
+                    containsAlpha = importer.DoesSourceTextureHaveAlpha(),
+                    hdr = false
+                };
+            this.textureImporterSettings =
+                new TextureProxyImporterSettings()
+                {
+                    textureType = importer.textureType,
+                    textureShape = importer.textureShape,
+                    generateCubemap = importer.generateCubemap,
+                    cubemapConvolution = TextureImporterCubemapConvolution.None,
+                    seamlessCubemap = false,
+                    sRGBTexture = importer.sRGBTexture,
+                    alphaSource = importer.alphaSource,
+                    alphaIsTransparency = importer.alphaIsTransparency,
+                    npotScale = importer.npotScale,
+                    readable = importer.isReadable,
+                    streamingMipmaps = importer.streamingMipmaps || importer.mipmapEnabled,
+                    streamingMipmapsPriority = importer.streamingMipmapsPriority,
+                    mipmapEnabled = importer.mipmapEnabled,
+                    borderMipmap = importer.borderMipmap,
+                    mipmapFilter = importer.mipmapFilter,
+                    mipMapsPreserveCoverage = importer.mipMapsPreserveCoverage,
+                    alphaTestReferenceValue = importer.alphaTestReferenceValue,
+                    fadeOut = importer.fadeout,
+                    mipmapFadeDistanceStart = importer.mipmapFadeDistanceStart,
+                    mipmapFadeDistanceEnd = importer.mipmapFadeDistanceEnd,
+                    wrapMode = importer.wrapMode,
+                    filterMode = importer.filterMode,
+                    aniso = importer.anisoLevel
+                };
+            var platformSettings = importer.GetDefaultPlatformTextureSettings();
+            this.textureImporterPlatformSettings =
+                new TextureProxyImporterPlatformSettings()
+                {
+                    maxTextureSize = platformSettings.maxTextureSize,
+                    resizeAlgorithm = platformSettings.resizeAlgorithm,
+                    format = platformSettings.format,
+                    textureCompression = platformSettings.textureCompression,
+                    crunchedCompression = platformSettings.crunchedCompression
+                };
         }
     }
 }

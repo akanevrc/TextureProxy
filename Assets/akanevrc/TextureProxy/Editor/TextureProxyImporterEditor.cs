@@ -13,30 +13,38 @@ namespace akanevrc.TextureProxy
         public static readonly Vector2 previewTextureSize = new Vector2(64F, 64F);
         public static readonly float previewTextureSpace = 8F;
 
-        private SerializedProperty pixelFilterSettingsList;
+        private SerializedProperty filterSettingsList;
         private SerializedProperty sourceTextureInformation;
         private SerializedProperty textureImporterSettings;
         private SerializedProperty textureImporterPlatformSettings;
 
-        private Texture2D previewTexture;
+        private RenderTexture previewTexture;
+        private RenderTexture renderTexture0;
+        private RenderTexture renderTexture1;
         private Texture2D sourceTexture;
+        private bool importSettingsFoldout;
 
         public override void OnEnable()
         {
             base.OnEnable();
-            this.pixelFilterSettingsList = this.serializedObject.FindProperty(nameof(this.pixelFilterSettingsList));
+            this.filterSettingsList = this.serializedObject.FindProperty(nameof(this.filterSettingsList));
             this.sourceTextureInformation = this.serializedObject.FindProperty(nameof(this.sourceTextureInformation));
             this.textureImporterSettings = this.serializedObject.FindProperty(nameof(this.textureImporterSettings));
             this.textureImporterPlatformSettings = this.serializedObject.FindProperty(nameof(this.textureImporterPlatformSettings));
 
-            this.previewTexture =
-                new Texture2D
+            this.renderTexture0 =
+                RenderTexture.GetTemporary
                 (
                     (int)TextureProxyImporterEditor.previewTextureSize.x,
                     (int)TextureProxyImporterEditor.previewTextureSize.y,
-                    TextureFormat.RGBA32,
-                    0,
-                    false
+                    0
+                );
+            this.renderTexture1 =
+                RenderTexture.GetTemporary
+                (
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
+                    0
                 );
             this.sourceTexture =
                 new Texture2D
@@ -47,6 +55,8 @@ namespace akanevrc.TextureProxy
                     0,
                     false
                 );
+
+            this.previewTexture = this.renderTexture0;
 
             var bytes = (byte[])null;
             try
@@ -60,17 +70,20 @@ namespace akanevrc.TextureProxy
 
             var importer = (TextureProxyImporter)this.target;
             this.sourceTexture.LoadImage(bytes);
-            this.previewTexture.LoadImage(bytes);
-            this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.previewTexture.GetPixels()));
-            this.previewTexture.Apply();
+            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
         }
 
         public override void OnDisable()
         {
-            if (this.previewTexture != null)
+            if (this.renderTexture0 != null)
             {
-                UnityEngine.Object.DestroyImmediate(this.previewTexture);
-                this.previewTexture = null;
+                RenderTexture.ReleaseTemporary(this.renderTexture0);
+                this.renderTexture0 = null;
+            }
+            if (this.renderTexture1 != null)
+            {
+                RenderTexture.ReleaseTemporary(this.renderTexture1);
+                this.renderTexture1 = null;
             }
             if (this.sourceTexture != null)
             {
@@ -100,19 +113,23 @@ namespace akanevrc.TextureProxy
 
             EditorGUILayout.Space();
 
-            PixelFilterSettingsList(this.pixelFilterSettingsList);
+            FilterSettingsList(this.filterSettingsList);
 
             EditorGUILayout.Space();
 
-            SourceTextureInformationFields(this.sourceTextureInformation);
+            this.importSettingsFoldout = EditorGUILayout.Foldout(this.importSettingsFoldout, "Texture Import Settings");
+            if (this.importSettingsFoldout)
+            {
+                SourceTextureInformationFields(this.sourceTextureInformation);
 
-            EditorGUILayout.Space();
+                EditorGUILayout.Space();
 
-            TextureImporterSettingsFields(this.textureImporterSettings);
+                TextureImporterSettingsFields(this.textureImporterSettings, IsNPOT(this.sourceTextureInformation));
 
-            EditorGUILayout.Space();
-            
-            TextureImporterPlatformSettingsFields(this.textureImporterPlatformSettings);
+                EditorGUILayout.Space();
+                
+                TextureImporterPlatformSettingsFields(this.textureImporterPlatformSettings);
+            }
 
             if (EditorGUI.EndChangeCheck()) changed = true;
 
@@ -120,14 +137,13 @@ namespace akanevrc.TextureProxy
 
             if (changed)
             {
-                this.previewTexture.SetPixels(PixelFilter.FilterAll(importer.pixelFilterSettingsList, this.sourceTexture.GetPixels()));
-                this.previewTexture.Apply();
+                this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
             }
 
             base.ApplyRevertGUI();
         }
 
-        private void PixelFilterSettingsList(SerializedProperty settingsList)
+        private void FilterSettingsList(SerializedProperty settingsList)
         {
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
@@ -139,7 +155,7 @@ namespace akanevrc.TextureProxy
                 var toggle = settings.FindPropertyRelative("toggle");
 
                 toggle.boolValue = EditorGUILayout.BeginToggleGroup($"Layer {i}", toggle.boolValue);
-                PixelFilterSettingsFields(settings);
+                FilterSettingsFields(settings);
                 EditorGUILayout.EndToggleGroup();
 
                 if (i < settingsList.arraySize - 1 && GUILayout.Button("Move Up"))
@@ -171,6 +187,7 @@ namespace akanevrc.TextureProxy
             foreach (var index in insertingIndex)
             {
                 settingsList.InsertArrayElementAtIndex(index);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(index));
             }
             foreach (var index in deletingIndex)
             {
@@ -180,16 +197,63 @@ namespace akanevrc.TextureProxy
             if (GUILayout.Button("Add"))
             {
                 settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
             }
         }
 
-        private void PixelFilterSettingsFields(SerializedProperty settings)
+        private void InitFilterSettings(SerializedProperty settings)
         {
+            var toggle = settings.FindPropertyRelative("toggle");
             var mode = settings.FindPropertyRelative("mode");
+            var colorTexture = settings.FindPropertyRelative("colorTexture");
+            var colorTextureScale = settings.FindPropertyRelative("colorTextureScale");
+            var colorTextureOffset = settings.FindPropertyRelative("colorTextureOffset");
+            var maskTexture = settings.FindPropertyRelative("maskTexture");
+            var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
+            var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
 
-            mode.intValue = (int)(PixelFilterMode)EditorGUILayout.EnumPopup("Mode", (PixelFilterMode)mode.intValue);
+            toggle.boolValue = true;
+            mode.intValue = (int)FilterMode.Multiply;
+            colorTexture.objectReferenceValue = null;
+            colorTextureScale.vector2Value = new Vector2(1F, 1F);
+            colorTextureOffset.vector2Value = new Vector2(0F, 0F);
+            maskTexture.objectReferenceValue = null;
+            maskTextureScale.vector2Value = new Vector2(1F, 1F);
+            maskTextureOffset.vector2Value = new Vector2(0F, 0F);
+            color.colorValue = Color.white;
+        }
+
+        private void FilterSettingsFields(SerializedProperty settings)
+        {
+            var mode = settings.FindPropertyRelative("mode");
+            var colorTexture = settings.FindPropertyRelative("colorTexture");
+            var colorTextureScale = settings.FindPropertyRelative("colorTextureScale");
+            var colorTextureOffset = settings.FindPropertyRelative("colorTextureOffset");
+            var maskTexture = settings.FindPropertyRelative("maskTexture");
+            var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
+            var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
+            var color = settings.FindPropertyRelative("color");
+
+            mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
+            EditorGUILayout.Space();
+            TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
+            EditorGUILayout.Space();
+            TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
+            EditorGUILayout.Space();
             color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+        }
+
+        private void TextureField(string label, SerializedProperty texture, SerializedProperty scale, SerializedProperty offset)
+        {
+            EditorGUILayout.LabelField(label);
+            EditorGUI.indentLevel++;
+            var rect = EditorGUILayout.GetControlRect(true, 0F);
+            rect.height = 42F;
+            texture.objectReferenceValue = EditorGUI.ObjectField(rect, "", texture.objectReferenceValue, typeof(Texture2D), false);
+            scale.vector2Value = EditorGUILayout.Vector2Field("Tiling", scale.vector2Value);
+            offset.vector2Value = EditorGUILayout.Vector2Field("Offset", offset.vector2Value);
+            EditorGUI.indentLevel--;
         }
 
         private void SourceTextureInformationFields(SerializedProperty information)
@@ -205,11 +269,19 @@ namespace akanevrc.TextureProxy
             hdr.boolValue = EditorGUILayout.Toggle("HDR", hdr.boolValue);
         }
 
-        private void TextureImporterSettingsFields(SerializedProperty settings)
+        private bool IsNPOT(SerializedProperty information)
+        {
+            var width = information.FindPropertyRelative("width");
+            var height = information.FindPropertyRelative("height");
+            return Mathf.NextPowerOfTwo(width.intValue) != width.intValue || Mathf.NextPowerOfTwo(height.intValue) != height.intValue;
+        }
+
+        private void TextureImporterSettingsFields(SerializedProperty settings, bool npot)
         {
             var sRGBTexture = settings.FindPropertyRelative("sRGBTexture");
             var alphaSource = settings.FindPropertyRelative("alphaSource");
             var alphaIsTransparency = settings.FindPropertyRelative("alphaIsTransparency");
+            var npotScale = settings.FindPropertyRelative("npotScale");
             var readable = settings.FindPropertyRelative("readable");
             var streamingMipmaps = settings.FindPropertyRelative("streamingMipmaps");
             var streamingMipmapsPriority = settings.FindPropertyRelative("streamingMipmapsPriority");
@@ -233,6 +305,10 @@ namespace akanevrc.TextureProxy
                 alphaIsTransparency.boolValue = EditorGUILayout.Toggle("Alpha Is Transparency", alphaIsTransparency.boolValue);
                 EditorGUI.indentLevel--;
             }
+            if (npot)
+            {
+                npotScale.intValue = (int)(TextureImporterNPOTScale)EditorGUILayout.EnumPopup("Non-Power of 2", (TextureImporterNPOTScale)npotScale.intValue);
+            }
             readable.boolValue = EditorGUILayout.Toggle("Read/Write Enabled", readable.boolValue);
             streamingMipmaps.boolValue = EditorGUILayout.Toggle("Streaming Mipmaps", streamingMipmaps.boolValue);
             if (streamingMipmaps.boolValue)
@@ -241,9 +317,15 @@ namespace akanevrc.TextureProxy
                 streamingMipmapsPriority.intValue = EditorGUILayout.IntField("Mip Map Priority", streamingMipmapsPriority.intValue);
                 EditorGUI.indentLevel--;
             }
+            else
+            {
+                mipmapEnabled.boolValue = false;
+            }
             mipmapEnabled.boolValue = EditorGUILayout.Toggle("Generate Mip Maps", mipmapEnabled.boolValue);
             if (mipmapEnabled.boolValue)
             {
+                streamingMipmaps.boolValue = true;
+
                 EditorGUI.indentLevel++;
                 borderMipmap.boolValue = EditorGUILayout.Toggle("Border Mip Maps", borderMipmap.boolValue);
                 mipmapFilter.intValue = (int)(TextureImporterMipFilter)EditorGUILayout.EnumPopup("Mip Map Filtering", (TextureImporterMipFilter)mipmapFilter.intValue);
@@ -265,7 +347,7 @@ namespace akanevrc.TextureProxy
                 EditorGUI.indentLevel--;
             }
             wrapMode.intValue = (int)(TextureWrapMode)EditorGUILayout.EnumPopup("Wrap Mode", (TextureWrapMode)wrapMode.intValue);
-            filterMode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Filter Mode", (FilterMode)filterMode.intValue);
+            filterMode.intValue = (int)(UnityEngine.FilterMode)EditorGUILayout.EnumPopup("Filter Mode", (UnityEngine.FilterMode)filterMode.intValue);
             aniso.intValue = EditorGUILayout.IntSlider("Aniso Level", aniso.intValue, 0, 16);
         }
 
