@@ -305,9 +305,15 @@ namespace akanevrc.TextureProxy
                 streamingMipmapsPriority.intValue = EditorGUILayout.IntField("Mip Map Priority", streamingMipmapsPriority.intValue);
                 EditorGUI.indentLevel--;
             }
+            else
+            {
+                mipmapEnabled.boolValue = false;
+            }
             mipmapEnabled.boolValue = EditorGUILayout.Toggle("Generate Mip Maps", mipmapEnabled.boolValue);
             if (mipmapEnabled.boolValue)
             {
+                streamingMipmaps.boolValue = true;
+
                 EditorGUI.indentLevel++;
                 borderMipmap.boolValue = EditorGUILayout.Toggle("Border Mip Maps", borderMipmap.boolValue);
                 mipmapFilter.intValue = (int)(TextureImporterMipFilter)EditorGUILayout.EnumPopup("Mip Map Filtering", (TextureImporterMipFilter)mipmapFilter.intValue);
