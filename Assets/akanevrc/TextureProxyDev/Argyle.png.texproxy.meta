@@ -24,7 +24,7 @@ ScriptedImporter:
     alphaSource: 1
     alphaIsTransparency: 0
     readable: 0
-    streamingMipmaps: 0
+    streamingMipmaps: 1
     streamingMipmapsPriority: 0
     mipmapEnabled: 1
     borderMipmap: 0
