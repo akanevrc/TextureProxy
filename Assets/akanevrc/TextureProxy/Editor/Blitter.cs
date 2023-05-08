@@ -61,6 +61,9 @@ namespace akanevrc.TextureProxy
             material.SetTextureScale("_Mask", settings.maskTextureScale);
             material.SetTextureOffset("_Mask", settings.maskTextureOffset);
             material.SetColor("_Color", settings.color);
+            material.SetFloat("_Hue", settings.hue);
+            material.SetFloat("_Saturation", settings.saturation);
+            material.SetFloat("_Luminosity", settings.luminosity);
         }
 
         private static void EnableKeyword(Material material, FilterSettings settings)

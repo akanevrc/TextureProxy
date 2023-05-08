@@ -214,7 +214,7 @@ namespace akanevrc.TextureProxy
             var color = settings.FindPropertyRelative("color");
 
             toggle.boolValue = true;
-            mode.intValue = (int)FilterMode.Multiply;
+            mode.intValue = (int)FilterMode.ColorCorrection;
             colorTexture.objectReferenceValue = null;
             colorTextureScale.vector2Value = new Vector2(1F, 1F);
             colorTextureOffset.vector2Value = new Vector2(0F, 0F);
@@ -234,14 +234,34 @@ namespace akanevrc.TextureProxy
             var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
             var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
+            var hue = settings.FindPropertyRelative("hue");
+            var saturation = settings.FindPropertyRelative("saturation");
+            var luminosity = settings.FindPropertyRelative("luminosity");
 
             mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
             EditorGUILayout.Space();
-            TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
-            EditorGUILayout.Space();
-            TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
-            EditorGUILayout.Space();
-            color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+
+            if (mode.intValue == (int)FilterMode.ColorCorrection)
+            {
+                hue.floatValue = EditorGUILayout.Slider("Hue", hue.floatValue, -180F, 180F);
+                saturation.floatValue = EditorGUILayout.Slider("Saturation", saturation.floatValue, -1F, 1F);
+                luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
+                color.colorValue =
+                    new Color(
+                        color.colorValue.r,
+                        color.colorValue.g,
+                        color.colorValue.b,
+                        EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
+                    );
+            }
+            else
+            {
+                TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
+                EditorGUILayout.Space();
+                TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
+                EditorGUILayout.Space();
+                color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+            }
         }
 
         private void TextureField(string label, SerializedProperty texture, SerializedProperty scale, SerializedProperty offset)
