@@ -215,7 +215,7 @@ namespace akanevrc.TextureProxy
             var hue = settings.FindPropertyRelative("hue");
             var saturation = settings.FindPropertyRelative("saturation");
             var luminosity = settings.FindPropertyRelative("luminosity");
-            var gamma = settings.FindPropertyRelative("gamma");
+            var contrast = settings.FindPropertyRelative("contrast");
 
             toggle.boolValue = true;
             mode.intValue = (int)FilterMode.ColorCorrection;
@@ -229,7 +229,7 @@ namespace akanevrc.TextureProxy
             hue.floatValue = 0F;
             saturation.floatValue = 0F;
             luminosity.floatValue = 0F;
-            gamma.floatValue = 0F;
+            contrast.floatValue = 0F;
         }
 
         private void FilterSettingsFields(SerializedProperty settings)
@@ -245,7 +245,7 @@ namespace akanevrc.TextureProxy
             var hue = settings.FindPropertyRelative("hue");
             var saturation = settings.FindPropertyRelative("saturation");
             var luminosity = settings.FindPropertyRelative("luminosity");
-            var gamma = settings.FindPropertyRelative("gamma");
+            var contrast = settings.FindPropertyRelative("contrast");
 
             mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
             EditorGUILayout.Space();
@@ -263,10 +263,10 @@ namespace akanevrc.TextureProxy
                         EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
                     );
             }
-            if (mode.intValue == (int)FilterMode.GammaCorrection)
+            if (mode.intValue == (int)FilterMode.ContrastCorrection)
             {
                 luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
-                gamma.floatValue = EditorGUILayout.Slider("Gamma Value", gamma.floatValue, -10F, 10F);
+                contrast.floatValue = EditorGUILayout.Slider("Contrast", contrast.floatValue, -1F, 1F);
                 color.colorValue =
                     new Color(
                         color.colorValue.r,

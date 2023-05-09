@@ -44,7 +44,7 @@ namespace akanevrc.TextureProxy
                 hue = 0F,
                 saturation = 0F,
                 luminosity = 0F,
-                gamma = 0F
+                contrast = 0F
             };
             InitMaterial(material, settings);
         }
@@ -68,7 +68,7 @@ namespace akanevrc.TextureProxy
             material.SetFloat("_Hue", settings.hue);
             material.SetFloat("_Saturation", settings.saturation);
             material.SetFloat("_Luminosity", settings.luminosity);
-            material.SetFloat("_Gamma", settings.gamma);
+            material.SetFloat("_Contrast", settings.contrast);
         }
 
         private static void EnableKeyword(Material material, FilterSettings settings)
