@@ -17,6 +17,7 @@ namespace akanevrc.TextureProxy
             if (!TextureProxyImporter.SupportSettings(importer, out var errors))
             {
                 EditorUtility.DisplayDialog("Error: Duplicate As Texture Proxy", string.Join(Environment.NewLine, errors), "OK");
+                return;
             }
 
             TextureProxyImporter.activeTexture = texture;
