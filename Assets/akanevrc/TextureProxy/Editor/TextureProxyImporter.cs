@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Collections;
@@ -94,6 +94,7 @@ namespace akanevrc.TextureProxy
         public TextureImporterFormat format;
         public TextureImporterCompression textureCompression;
         public bool crunchedCompression;
+        public int compressionQuality;
 
         public static explicit operator TextureImporterPlatformSettings(TextureProxyImporterPlatformSettings settings)
         {
@@ -103,7 +104,8 @@ namespace akanevrc.TextureProxy
                 resizeAlgorithm = settings.resizeAlgorithm,
                 format = settings.format,
                 textureCompression = settings.textureCompression,
-                crunchedCompression = settings.crunchedCompression
+                crunchedCompression = settings.crunchedCompression,
+                compressionQuality = settings.compressionQuality
             };
         }
     }
@@ -157,7 +159,8 @@ namespace akanevrc.TextureProxy
                 resizeAlgorithm = TextureResizeAlgorithm.Mitchell,
                 format = TextureImporterFormat.Automatic,
                 textureCompression = TextureImporterCompression.Compressed,
-                crunchedCompression = false
+                crunchedCompression = false,
+                compressionQuality = 50
             };
 
         public override void OnImportAsset(AssetImportContext ctx)
@@ -308,7 +311,8 @@ namespace akanevrc.TextureProxy
                     resizeAlgorithm = platformSettings.resizeAlgorithm,
                     format = platformSettings.format,
                     textureCompression = platformSettings.textureCompression,
-                    crunchedCompression = platformSettings.crunchedCompression
+                    crunchedCompression = platformSettings.crunchedCompression,
+                    compressionQuality = platformSettings.compressionQuality
                 };
         }
     }

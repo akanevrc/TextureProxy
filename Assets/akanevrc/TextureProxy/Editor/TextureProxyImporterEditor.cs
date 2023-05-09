@@ -382,6 +382,7 @@ namespace akanevrc.TextureProxy
             var format = settings.FindPropertyRelative("format");
             var textureCompression = settings.FindPropertyRelative("textureCompression");
             var crunchedCompression = settings.FindPropertyRelative("crunchedCompression");
+            var compressionQuality = settings.FindPropertyRelative("compressionQuality");
 
             maxTextureSize.intValue = EditorGUILayout.IntField("Max Size", maxTextureSize.intValue);
             resizeAlgorithm.intValue = (int)(TextureResizeAlgorithm)EditorGUILayout.EnumPopup("Resize Algorithm", (TextureResizeAlgorithm)resizeAlgorithm.intValue);
@@ -391,6 +392,12 @@ namespace akanevrc.TextureProxy
             {
                 EditorGUI.indentLevel++;
                 crunchedCompression.boolValue = EditorGUILayout.Toggle("Use Crunch Compression", crunchedCompression.boolValue);
+                if (crunchedCompression.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    compressionQuality.intValue = EditorGUILayout.IntSlider("Compressor Quality", compressionQuality.intValue, 0, 100);
+                    EditorGUI.indentLevel--;
+                }
                 EditorGUI.indentLevel--;
             }
         }
