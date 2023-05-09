@@ -212,6 +212,10 @@ namespace akanevrc.TextureProxy
             var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
             var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
+            var hue = settings.FindPropertyRelative("hue");
+            var saturation = settings.FindPropertyRelative("saturation");
+            var luminosity = settings.FindPropertyRelative("luminosity");
+            var gamma = settings.FindPropertyRelative("gamma");
 
             toggle.boolValue = true;
             mode.intValue = (int)FilterMode.ColorCorrection;
@@ -222,6 +226,10 @@ namespace akanevrc.TextureProxy
             maskTextureScale.vector2Value = new Vector2(1F, 1F);
             maskTextureOffset.vector2Value = new Vector2(0F, 0F);
             color.colorValue = Color.white;
+            hue.floatValue = 0F;
+            saturation.floatValue = 0F;
+            luminosity.floatValue = 0F;
+            gamma.floatValue = 0F;
         }
 
         private void FilterSettingsFields(SerializedProperty settings)
@@ -237,6 +245,7 @@ namespace akanevrc.TextureProxy
             var hue = settings.FindPropertyRelative("hue");
             var saturation = settings.FindPropertyRelative("saturation");
             var luminosity = settings.FindPropertyRelative("luminosity");
+            var gamma = settings.FindPropertyRelative("gamma");
 
             mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
             EditorGUILayout.Space();
@@ -246,6 +255,18 @@ namespace akanevrc.TextureProxy
                 hue.floatValue = EditorGUILayout.Slider("Hue", hue.floatValue, -180F, 180F);
                 saturation.floatValue = EditorGUILayout.Slider("Saturation", saturation.floatValue, -1F, 1F);
                 luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
+                color.colorValue =
+                    new Color(
+                        color.colorValue.r,
+                        color.colorValue.g,
+                        color.colorValue.b,
+                        EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
+                    );
+            }
+            if (mode.intValue == (int)FilterMode.GammaCorrection)
+            {
+                luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
+                gamma.floatValue = EditorGUILayout.Slider("Gamma Value", gamma.floatValue, -10F, 10F);
                 color.colorValue =
                     new Color(
                         color.colorValue.r,

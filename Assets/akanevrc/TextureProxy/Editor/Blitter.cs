@@ -40,7 +40,11 @@ namespace akanevrc.TextureProxy
                 maskTexture = null,
                 maskTextureScale = new Vector2(1F, 1F),
                 maskTextureOffset = new Vector2(0F, 0F),
-                color = new Color(0F, 0F, 0F, 0F)
+                color = new Color(0F, 0F, 0F, 0F),
+                hue = 0F,
+                saturation = 0F,
+                luminosity = 0F,
+                gamma = 0F
             };
             InitMaterial(material, settings);
         }
@@ -64,6 +68,7 @@ namespace akanevrc.TextureProxy
             material.SetFloat("_Hue", settings.hue);
             material.SetFloat("_Saturation", settings.saturation);
             material.SetFloat("_Luminosity", settings.luminosity);
+            material.SetFloat("_Gamma", settings.gamma);
         }
 
         private static void EnableKeyword(Material material, FilterSettings settings)

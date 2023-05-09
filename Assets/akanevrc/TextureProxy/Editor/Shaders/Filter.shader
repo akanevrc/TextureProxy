@@ -2,7 +2,7 @@ Shader "akanevrc_TextureProxy/Filter"
 {
     Properties
     {
-        [KeywordEnum(Normal, Clear, Darken, Multiply, ColorBurn, LinearBurn, Lighten, Screen, ColorDodge, LinearDodge, Overlay, SoftLight, HardLight, VividLight, LinearLight, PinLight, HardMix, Difference, Exclusion, Subtract, Divide, Hue, Saturation, HSLColor, Luminosity, DarkerColor, LighterColor, ColorCorrection)]
+        [KeywordEnum(Normal, Clear, Darken, Multiply, ColorBurn, LinearBurn, Lighten, Screen, ColorDodge, LinearDodge, Overlay, SoftLight, HardLight, VividLight, LinearLight, PinLight, HardMix, Difference, Exclusion, Subtract, Divide, Hue, Saturation, HSLColor, Luminosity, DarkerColor, LighterColor, ColorCorrection, GammaCorrection)]
         _Mode ("Filter Mode", Float) = 0
 
         _MainTex ("Main Texture", 2D) = "white" {}
@@ -12,6 +12,7 @@ Shader "akanevrc_TextureProxy/Filter"
         _Hue ("Hue", Float) = 0
         _Saturation ("Saturation", Float) = 0
         _Luminosity ("Luminosity", Float) = 0
+        _Gamma ("Gamma", Float) = 0
     }
     SubShader
     {
@@ -27,7 +28,7 @@ Shader "akanevrc_TextureProxy/Filter"
             #pragma target 3.0
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile _MODE_NORMAL _MODE_CLEAR _MODE_DARKEN _MODE_MULTIPLY _MODE_COLORBURN _MODE_LINEARBURN _MODE_LIGHTEN _MODE_SCREEN _MODE_COLORDODGE _MODE_LINEARDODGE _MODE_OVERLAY _MODE_SOFTLIGHT _MODE_HARDLIGHT _MODE_VIVIDLIGHT _MODE_LINEARLIGHT _MODE_PINLIGHT _MODE_HARDMIX _MODE_DIFFERENCE _MODE_EXCLUSION _MODE_SUBTRACT _MODE_DIVIDE _MODE_HUE _MODE_SATURATION _MODE_HSLCOLOR _MODE_LUMINOSITY _MODE_DARKERCOLOR _MODE_LIGHTERCOLOR _MODE_COLORCORRECTION
+            #pragma multi_compile _MODE_NORMAL _MODE_CLEAR _MODE_DARKEN _MODE_MULTIPLY _MODE_COLORBURN _MODE_LINEARBURN _MODE_LIGHTEN _MODE_SCREEN _MODE_COLORDODGE _MODE_LINEARDODGE _MODE_OVERLAY _MODE_SOFTLIGHT _MODE_HARDLIGHT _MODE_VIVIDLIGHT _MODE_LINEARLIGHT _MODE_PINLIGHT _MODE_HARDMIX _MODE_DIFFERENCE _MODE_EXCLUSION _MODE_SUBTRACT _MODE_DIVIDE _MODE_HUE _MODE_SATURATION _MODE_HSLCOLOR _MODE_LUMINOSITY _MODE_DARKERCOLOR _MODE_LIGHTERCOLOR _MODE_COLORCORRECTION _MODE_GAMMACORRECTION
 
             #include "UnityCG.cginc"
 
@@ -53,6 +54,7 @@ Shader "akanevrc_TextureProxy/Filter"
             half _Hue;
             half _Saturation;
             half _Luminosity;
+            half _Gamma;
 
             v2f vert(appdata v)
             {
@@ -202,8 +204,10 @@ Shader "akanevrc_TextureProxy/Filter"
                 ca = half4(HSL_L(ca) > HSL_L(cb) ? ca.rgb : cb.rgb, ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_COLORCORRECTION
-                half3 c = HSL_RGB(((HSL_H(cb) + _Hue) % 360 + 360) % 360, saturate(HSL_S(cb) + _Saturation), saturate(HSL_L(cb) + _Luminosity));
-                ca = half4(c, ca.a);
+                ca = half4(HSL_RGB(((HSL_H(cb) + _Hue) % 360 + 360) % 360, saturate(HSL_S(cb) + _Saturation), saturate(HSL_L(cb) + _Luminosity)), ca.a);
+                return BLEND(ca, cb);
+            #elif _MODE_GAMMACORRECTION
+                ca = half4(pow(HSL_RGB(HSL_H(cb), HSL_S(cb), saturate(HSL_L(cb) + _Luminosity)), pow(1.1, -_Gamma)), ca.a);
                 return BLEND(ca, cb);
             #endif
             }

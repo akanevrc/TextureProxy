@@ -33,6 +33,7 @@ namespace akanevrc.TextureProxy
         DarkerColor,
         LighterColor,
         ColorCorrection,
+        GammaCorrection
     }
 
     [Serializable]
@@ -50,5 +51,6 @@ namespace akanevrc.TextureProxy
         public float hue;
         public float saturation;
         public float luminosity;
+        public float gamma;
     }
 }
