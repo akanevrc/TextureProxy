@@ -20,22 +20,22 @@ namespace akanevrc.TextureProxy
                 return;
             }
 
+            var newPath =
+                EditorUtility.SaveFilePanelInProject
+                (
+                    "Duplicate As Texture Proxy",
+                    $"{Path.GetFileName(path)}.texproxy",
+                    "texproxy",
+                    "Input asset file name",
+                    Path.GetDirectoryName(path)
+                );
+            if (string.IsNullOrWhiteSpace(newPath)) return;
+
             TextureProxyImporter.activeTexture = texture;
             TextureProxyImporter.activeImporter = importer;
 
             try
             {
-                var newPath =
-                    EditorUtility.SaveFilePanelInProject
-                    (
-                        "Duplicate As Texture Proxy",
-                        $"{Path.GetFileName(path)}.texproxy",
-                        "texproxy",
-                        "Input asset file name",
-                        Path.GetDirectoryName(path)
-                    );
-                if (string.IsNullOrWhiteSpace(newPath)) return;
-
                 AssetDatabase.DeleteAsset(newPath);
                 File.Copy(path, newPath);
                 AssetDatabase.ImportAsset(newPath);
