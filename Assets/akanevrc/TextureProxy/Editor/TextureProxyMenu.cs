@@ -8,7 +8,7 @@ namespace akanevrc.TextureProxy
     public static class TextureProxyMenu
     {
         [MenuItem("Assets/Texture Proxy/Duplicate As Texture Proxy")]
-        public static void SetTextureProxy()
+        public static void DuplicateTextureProxy()
         {
             var texture = (Texture)Selection.activeObject;
             var path = AssetDatabase.GetAssetPath(texture);
@@ -48,7 +48,7 @@ namespace akanevrc.TextureProxy
         }
 
         [MenuItem("Assets/Texture Proxy/Duplicate As Texture Proxy", true)]
-        public static bool ValidateSetTextureProxy()
+        public static bool ValidateDuplicateTextureProxy()
         {
             return
                 Selection.activeObject is Texture texture &&
