@@ -120,10 +120,6 @@ namespace akanevrc.TextureProxy
             this.importSettingsFoldout = EditorGUILayout.Foldout(this.importSettingsFoldout, "Texture Import Settings");
             if (this.importSettingsFoldout)
             {
-                SourceTextureInformationFields(this.sourceTextureInformation);
-
-                EditorGUILayout.Space();
-
                 TextureImporterSettingsFields(this.textureImporterSettings, IsNPOT(this.sourceTextureInformation));
 
                 EditorGUILayout.Space();
@@ -295,19 +291,6 @@ namespace akanevrc.TextureProxy
             scale.vector2Value = EditorGUILayout.Vector2Field("Tiling", scale.vector2Value);
             offset.vector2Value = EditorGUILayout.Vector2Field("Offset", offset.vector2Value);
             EditorGUI.indentLevel--;
-        }
-
-        private void SourceTextureInformationFields(SerializedProperty information)
-        {
-            var width = information.FindPropertyRelative("width");
-            var height = information.FindPropertyRelative("height");
-            var containsAlpha = information.FindPropertyRelative("containsAlpha");
-            var hdr = information.FindPropertyRelative("hdr");
-
-            width.intValue = EditorGUILayout.IntField("Width", width.intValue);
-            height.intValue = EditorGUILayout.IntField("Height", height.intValue);
-            containsAlpha.boolValue = EditorGUILayout.Toggle("Contains Alpha", containsAlpha.boolValue);
-            hdr.boolValue = EditorGUILayout.Toggle("HDR", hdr.boolValue);
         }
 
         private bool IsNPOT(SerializedProperty information)
