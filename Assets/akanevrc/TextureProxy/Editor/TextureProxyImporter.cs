@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Collections;
@@ -182,31 +182,33 @@ namespace akanevrc.TextureProxy
                 return;
             }
 
-            var renderTexture0 = RenderTexture.GetTemporary
-            (
-                this.sourceTextureInformation.width,
-                this.sourceTextureInformation.height,
-                0
-            );
-            var renderTexture1 = RenderTexture.GetTemporary
-            (
-                this.sourceTextureInformation.width,
-                this.sourceTextureInformation.height,
-                0
-            );
+            var w = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.width, this.textureImporterPlatformSettings.maxTextureSize));
+            var h = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.height, this.textureImporterPlatformSettings.maxTextureSize));
 
-            var texture =
+            var renderTexture0 = RenderTexture.GetTemporary(w, h, 0);
+            var renderTexture1 = RenderTexture.GetTemporary(w, h, 0);
+
+            var src =
                 new Texture2D
                 (
-                    this.sourceTextureInformation.width,
-                    this.sourceTextureInformation.height,
-                    TextureFormat.RGBA32,
+                    w,
+                    h,
+                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
+                    0,
+                    true
+                );
+            var dest =
+                new Texture2D
+                (
+                    w,
+                    h,
+                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
                     0,
                     true
                 );
             try
             {
-                ApplyFilters(bytes, texture, renderTexture0, renderTexture1);
+                ApplyFilters(bytes, src, dest, renderTexture0, renderTexture1);
 
                 var output = TextureGenerator.GenerateTexture
                 (
@@ -218,7 +220,7 @@ namespace akanevrc.TextureProxy
                         sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
                         textureImporterSettings = (TextureImporterSettings)textureImporterSettings
                     },
-                    new NativeArray<Color32>(texture.GetPixels32(), Allocator.Temp)
+                    new NativeArray<Color32>(dest.GetPixels32(), Allocator.Temp)
                 );
                 ctx.AddObjectToAsset("Texture", output.texture);
                 ctx.SetMainObject(output.texture);
@@ -227,19 +229,20 @@ namespace akanevrc.TextureProxy
             {
                 RenderTexture.ReleaseTemporary(renderTexture0);
                 RenderTexture.ReleaseTemporary(renderTexture1);
-                UnityEngine.Object.DestroyImmediate(texture);
+                UnityEngine.Object.DestroyImmediate(src);
+                UnityEngine.Object.DestroyImmediate(dest);
             }
         }
 
-        private void ApplyFilters(byte[] bytes, Texture2D source, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        private void ApplyFilters(byte[] bytes, Texture2D src, Texture2D dest, RenderTexture renderTexture0, RenderTexture renderTexture1)
         {
-            source.LoadImage(bytes);
-            var renderTexture = Blitter.Blit(this.filterSettingsList, source, renderTexture0, renderTexture1);
+            src.LoadImage(bytes);
+            var renderTexture = Blitter.Blit(this.filterSettingsList, src, renderTexture0, renderTexture1);
 
             var oldRenderTexture = RenderTexture.active;
             RenderTexture.active = renderTexture;
-            source.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
-            source.Apply();
+            dest.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
+            dest.Apply();
             RenderTexture.active = oldRenderTexture;
         }
 
