@@ -176,6 +176,12 @@ namespace akanevrc.TextureProxy
 
         private void FilterSettingsList(SerializedProperty settingsList)
         {
+            if (GUILayout.Button("Add"))
+            {
+                settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
+            }
+
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
             var insertingIndex = new List<int>();
@@ -223,12 +229,6 @@ namespace akanevrc.TextureProxy
             foreach (var index in deletingIndex)
             {
                 settingsList.DeleteArrayElementAtIndex(index);
-            }
-
-            if (GUILayout.Button("Add"))
-            {
-                settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
-                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
             }
         }
 
