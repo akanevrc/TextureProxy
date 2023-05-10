@@ -28,10 +28,12 @@ namespace akanevrc.TextureProxy
         Divide,
         Hue,
         Saturation,
-        HSVColor,
+        HSLColor,
         Luminosity,
         DarkerColor,
-        LighterColor
+        LighterColor,
+        ColorCorrection,
+        ContrastCorrection
     }
 
     [Serializable]
@@ -46,5 +48,9 @@ namespace akanevrc.TextureProxy
         public Vector2 maskTextureScale;
         public Vector2 maskTextureOffset;
         public Color color;
+        public float hue;
+        public float saturation;
+        public float luminosity;
+        public float contrast;
     }
 }

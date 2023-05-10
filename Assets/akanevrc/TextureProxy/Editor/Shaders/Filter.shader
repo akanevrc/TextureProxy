@@ -2,13 +2,17 @@ Shader "akanevrc_TextureProxy/Filter"
 {
     Properties
     {
-        [KeywordEnum(Normal, Clear, Darken, Multiply, ColorBurn, LinearBurn, Lighten, Screen, ColorDodge, LinearDodge, Overlay, SoftLight, HardLight, VividLight, LinearLight, PinLight, HardMix, Difference, Exclusion, Subtract, Divide, Hue, Saturation, HSVColor, Luminosity, DarkerColor, LighterColor)]
+        [KeywordEnum(Normal, Clear, Darken, Multiply, ColorBurn, LinearBurn, Lighten, Screen, ColorDodge, LinearDodge, Overlay, SoftLight, HardLight, VividLight, LinearLight, PinLight, HardMix, Difference, Exclusion, Subtract, Divide, Hue, Saturation, HSLColor, Luminosity, DarkerColor, LighterColor, ColorCorrection, ContrastCorrection)]
         _Mode ("Filter Mode", Float) = 0
 
         _MainTex ("Main Texture", 2D) = "white" {}
         _SubTex ("Sub Texture", 2D) = "white" {}
         _Mask ("Mask", 2D) = "white" {}
         _Color ("Color", Color) = (1, 1, 1, 1)
+        _Hue ("Hue", Float) = 0
+        _Saturation ("Saturation", Float) = 0
+        _Luminosity ("Luminosity", Float) = 0
+        _Contrast ("Contrast", Float) = 0
     }
     SubShader
     {
@@ -24,7 +28,7 @@ Shader "akanevrc_TextureProxy/Filter"
             #pragma target 3.0
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile _MODE_NORMAL _MODE_CLEAR _MODE_DARKEN _MODE_MULTIPLY _MODE_COLORBURN _MODE_LINEARBURN _MODE_LIGHTEN _MODE_SCREEN _MODE_COLORDODGE _MODE_LINEARDODGE _MODE_OVERLAY _MODE_SOFTLIGHT _MODE_HARDLIGHT _MODE_VIVIDLIGHT _MODE_LINEARLIGHT _MODE_PINLIGHT _MODE_HARDMIX _MODE_DIFFERENCE _MODE_EXCLUSION _MODE_SUBTRACT _MODE_DIVIDE _MODE_HUE _MODE_SATURATION _MODE_HSVCOLOR _MODE_LUMINOSITY _MODE_DARKERCOLOR _MODE_LIGHTERCOLOR
+            #pragma multi_compile _MODE_NORMAL _MODE_CLEAR _MODE_DARKEN _MODE_MULTIPLY _MODE_COLORBURN _MODE_LINEARBURN _MODE_LIGHTEN _MODE_SCREEN _MODE_COLORDODGE _MODE_LINEARDODGE _MODE_OVERLAY _MODE_SOFTLIGHT _MODE_HARDLIGHT _MODE_VIVIDLIGHT _MODE_LINEARLIGHT _MODE_PINLIGHT _MODE_HARDMIX _MODE_DIFFERENCE _MODE_EXCLUSION _MODE_SUBTRACT _MODE_DIVIDE _MODE_HUE _MODE_SATURATION _MODE_HSLCOLOR _MODE_LUMINOSITY _MODE_DARKERCOLOR _MODE_LIGHTERCOLOR _MODE_COLORCORRECTION _MODE_CONTRASTCORRECTION
 
             #include "UnityCG.cginc"
 
@@ -47,6 +51,10 @@ Shader "akanevrc_TextureProxy/Filter"
             sampler2D _Mask;
             float4 _Mask_ST;
             half4 _Color;
+            half _Hue;
+            half _Saturation;
+            half _Luminosity;
+            half _Contrast;
 
             v2f vert(appdata v)
             {
@@ -57,6 +65,16 @@ Shader "akanevrc_TextureProxy/Filter"
             }
 
             #define BLEND(ca, cb) half4(ca.rgb * ca.a + cb.rgb * (1 - ca.a), ca.a + cb.a * (1 - ca.a))
+
+            #define HSL_H(c) (c.r == c.g && c.g == c.b ? 0 : c.r >= c.g && c.g >= c.b ? 60 * (c.g - c.b) / (c.r - c.b) : c.r >= c.b && c.b >= c.g ? 60 * (c.g - c.b) / (c.r - c.g) : c.g >= c.r && c.r >= c.b ? 60 * (c.b - c.r) / (c.g - c.b) + 120 : c.g >= c.b && c.b >= c.r ? 60 * (c.b - c.r) / (c.g - c.r) + 120 : c.b >= c.r && c.r >= c.g ? 60 * (c.r - c.g) / (c.b - c.g) + 240 : 60 * (c.r - c.g) / (c.b - c.r) + 240)
+            #define _HSL_S_MAX(c) (max(c.r, max(c.g, c.b)))
+            #define _HSL_S_MIN(c) (min(c.r, min(c.g, c.b)))
+            #define HSL_S(c) (c.r == c.g && c.g == c.b ? 0 : _HSL_S_MAX(c) + _HSL_S_MIN(c) <= 1 ? (_HSL_S_MAX(c) - _HSL_S_MIN(c)) / (_HSL_S_MAX(c) + _HSL_S_MIN(c)) : (_HSL_S_MAX(c) - _HSL_S_MIN(c)) / (2 - _HSL_S_MAX(c) - _HSL_S_MIN(c)))
+            #define HSL_L(c) ((max(c.r, max(c.g, c.b)) + min(c.r, min(c.g, c.b))) * 0.5)
+            #define _HSL_MAX(s, l) ((l) <= 0.5 ? (l) + (s) * (l) : (l) + (s) * (1 - (l)))
+            #define _HSL_MIN(s, l) ((l) <= 0.5 ? (l) - (s) * (l) : (l) - (s) * (1 - (l)))
+            #define _HSL_MID(h, s, l) ((h) * (_HSL_MAX(s, l) - _HSL_MIN(s, l)) + _HSL_MIN(s, l))
+            #define HSL_RGB(h, s, l) ((h) < 60 ? half3(_HSL_MAX(s, l), _HSL_MID((h) / 60, s, l), _HSL_MIN(s, l)) : (h) < 120 ? half3(_HSL_MID((120 - (h)) / 60, s, l), _HSL_MAX(s, l), _HSL_MIN(s, l)) : (h) < 180 ? half3(_HSL_MIN(s, l), _HSL_MAX(s, l), _HSL_MID(((h) - 120) / 60, s, l)) : (h) < 240 ? half3(_HSL_MIN(s, l), _HSL_MID((240 - (h)) / 60, s, l), _HSL_MAX(s, l)) : (h) < 300 ? half3(_HSL_MID(((h) - 240) / 60, s, l), _HSL_MIN(s, l), _HSL_MAX(s, l)) : half3(_HSL_MAX(s, l), _HSL_MIN(s, l), _HSL_MID((360 - (h)) / 60, s, l)))
 
             fixed4 frag(v2f i) : SV_Target
             {
@@ -168,16 +186,28 @@ Shader "akanevrc_TextureProxy/Filter"
                 ca = half4(saturate(cb.rgb / ca.rgb), ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_HUE
+                ca = half4(HSL_RGB(HSL_H(ca), HSL_S(cb), HSL_L(cb)), ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_SATURATION
+                ca = half4(HSL_RGB(HSL_H(cb), HSL_S(ca), HSL_L(cb)), ca.a);
                 return BLEND(ca, cb);
-            #elif _MODE_HSVCOLOR
+            #elif _MODE_HSLCOLOR
+                ca = half4(HSL_RGB(HSL_H(ca), HSL_S(ca), HSL_L(cb)), ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_LUMINOSITY
+                ca = half4(HSL_RGB(HSL_H(cb), HSL_S(cb), HSL_L(ca)), ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_DARKERCOLOR
+                ca = half4(HSL_L(ca) < HSL_L(cb) ? ca.rgb : cb.rgb, ca.a);
                 return BLEND(ca, cb);
             #elif _MODE_LIGHTERCOLOR
+                ca = half4(HSL_L(ca) > HSL_L(cb) ? ca.rgb : cb.rgb, ca.a);
+                return BLEND(ca, cb);
+            #elif _MODE_COLORCORRECTION
+                ca = half4(HSL_RGB(((HSL_H(cb) + _Hue) % 360 + 360) % 360, saturate(HSL_S(cb) + _Saturation), saturate(HSL_L(cb) + _Luminosity)), ca.a);
+                return BLEND(ca, cb);
+            #elif _MODE_CONTRASTCORRECTION
+                ca = half4(HSL_RGB(HSL_H(cb), HSL_S(cb), saturate((HSL_L(cb) - 0.5) * (_Contrast + 1) + 0.5 + _Luminosity)), ca.a);
                 return BLEND(ca, cb);
             #endif
             }

@@ -94,6 +94,7 @@ namespace akanevrc.TextureProxy
         public TextureImporterFormat format;
         public TextureImporterCompression textureCompression;
         public bool crunchedCompression;
+        public int compressionQuality;
 
         public static explicit operator TextureImporterPlatformSettings(TextureProxyImporterPlatformSettings settings)
         {
@@ -103,7 +104,8 @@ namespace akanevrc.TextureProxy
                 resizeAlgorithm = settings.resizeAlgorithm,
                 format = settings.format,
                 textureCompression = settings.textureCompression,
-                crunchedCompression = settings.crunchedCompression
+                crunchedCompression = settings.crunchedCompression,
+                compressionQuality = settings.compressionQuality
             };
         }
     }
@@ -157,7 +159,8 @@ namespace akanevrc.TextureProxy
                 resizeAlgorithm = TextureResizeAlgorithm.Mitchell,
                 format = TextureImporterFormat.Automatic,
                 textureCompression = TextureImporterCompression.Compressed,
-                crunchedCompression = false
+                crunchedCompression = false,
+                compressionQuality = 50
             };
 
         public override void OnImportAsset(AssetImportContext ctx)
@@ -169,43 +172,11 @@ namespace akanevrc.TextureProxy
                 TextureProxyImporter.activeImporter = null;
             }
 
-            var bytes = (byte[])null;
-            try
-            {
-                bytes = File.ReadAllBytes(ctx.assetPath);
-            }
-            catch (IOException)
-            {
-                return;
-            }
+            var pixels = LoadAndApply(ctx.assetPath);
+            if (pixels == null) return;
 
-            var renderTexture0 = RenderTexture.GetTemporary
-            (
-                this.sourceTextureInformation.width,
-                this.sourceTextureInformation.height,
-                0
-            );
-            var renderTexture1 = RenderTexture.GetTemporary
-            (
-                this.sourceTextureInformation.width,
-                this.sourceTextureInformation.height,
-                0
-            );
-
-            var texture =
-                new Texture2D
-                (
-                    this.sourceTextureInformation.width,
-                    this.sourceTextureInformation.height,
-                    TextureFormat.RGBA32,
-                    0,
-                    true
-                );
-            try
-            {
-                ApplyFilters(bytes, texture, renderTexture0, renderTexture1);
-
-                var output = TextureGenerator.GenerateTexture
+            var output =
+                TextureGenerator.GenerateTexture
                 (
                     new TextureGenerationSettings(textureImporterSettings.textureType)
                     {
@@ -215,32 +186,75 @@ namespace akanevrc.TextureProxy
                         sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
                         textureImporterSettings = (TextureImporterSettings)textureImporterSettings
                     },
-                    new NativeArray<Color32>(texture.GetPixels32(), Allocator.Temp)
+                    new NativeArray<Color32>(pixels, Allocator.Temp)
                 );
-                ctx.AddObjectToAsset("Texture", output.texture);
-                ctx.SetMainObject(output.texture);
+            ctx.AddObjectToAsset("Texture", output.texture);
+            ctx.SetMainObject(output.texture);
+        }
+
+        private Color32[] LoadAndApply(string assetPath)
+        {
+            var bytes = (byte[])null;
+            try
+            {
+                bytes = File.ReadAllBytes(assetPath);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+
+            var w = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.width, this.textureImporterPlatformSettings.maxTextureSize));
+            var h = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.height, this.textureImporterPlatformSettings.maxTextureSize));
+
+            var renderTexture0 = RenderTexture.GetTemporary(w, h, 0);
+            var renderTexture1 = RenderTexture.GetTemporary(w, h, 0);
+
+            var src =
+                new Texture2D
+                (
+                    w,
+                    h,
+                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
+                    0,
+                    true
+                );
+            var dest =
+                new Texture2D
+                (
+                    w,
+                    h,
+                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
+                    0,
+                    true
+                );
+            try
+            {
+                src.LoadImage(bytes);
+                ApplyFilters(src, dest, renderTexture0, renderTexture1);
+                return dest.GetPixels32();
             }
             finally
             {
                 RenderTexture.ReleaseTemporary(renderTexture0);
                 RenderTexture.ReleaseTemporary(renderTexture1);
-                UnityEngine.Object.DestroyImmediate(texture);
+                UnityEngine.Object.DestroyImmediate(src);
+                UnityEngine.Object.DestroyImmediate(dest);
             }
         }
 
-        private void ApplyFilters(byte[] bytes, Texture2D source, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        private void ApplyFilters(Texture2D src, Texture2D dest, RenderTexture renderTexture0, RenderTexture renderTexture1)
         {
-            source.LoadImage(bytes);
-            var renderTexture = Blitter.Blit(this.filterSettingsList, source, renderTexture0, renderTexture1);
+            var renderTexture = Blitter.Blit(this.filterSettingsList, src, renderTexture0, renderTexture1);
 
             var oldRenderTexture = RenderTexture.active;
             RenderTexture.active = renderTexture;
-            source.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
-            source.Apply();
+            dest.ReadPixels(new Rect(0F, 0F, renderTexture.width, renderTexture.height), 0, 0);
+            dest.Apply();
             RenderTexture.active = oldRenderTexture;
         }
 
-        public static bool SupportSettings(TextureImporter importer, out string[] errors)
+        public static bool SupportSettings(TextureImporter importer, string path, out string[] errors)
         {
             var errorList = new List<string>();
 
@@ -257,6 +271,12 @@ namespace akanevrc.TextureProxy
             if (importer.GetPlatformTextureSettings("Standalone").overridden || importer.GetPlatformTextureSettings("Android").overridden)
             {
                 errorList.Add("Default platform texture settings must not be overridden.");
+            }
+
+            var ext = Path.GetExtension(path).ToLower();
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg")
+            {
+                errorList.Add("This graphics format is not supported.");
             }
 
             errors = errorList.ToArray();
@@ -308,7 +328,8 @@ namespace akanevrc.TextureProxy
                     resizeAlgorithm = platformSettings.resizeAlgorithm,
                     format = platformSettings.format,
                     textureCompression = platformSettings.textureCompression,
-                    crunchedCompression = platformSettings.crunchedCompression
+                    crunchedCompression = platformSettings.crunchedCompression,
+                    compressionQuality = platformSettings.compressionQuality
                 };
         }
     }

@@ -22,6 +22,7 @@ namespace akanevrc.TextureProxy
         private RenderTexture renderTexture0;
         private RenderTexture renderTexture1;
         private Texture2D sourceTexture;
+        private string workAssetPath = null;
         private bool importSettingsFoldout;
 
         public override void OnEnable()
@@ -46,31 +47,36 @@ namespace akanevrc.TextureProxy
                     (int)TextureProxyImporterEditor.previewTextureSize.y,
                     0
                 );
-            this.sourceTexture =
-                new Texture2D
-                (
-                    (int)TextureProxyImporterEditor.previewTextureSize.x,
-                    (int)TextureProxyImporterEditor.previewTextureSize.y,
-                    TextureFormat.RGBA32,
-                    0,
-                    false
-                );
+
+            Load(AssetDatabase.GetAssetPath(this.assetTarget));
 
             this.previewTexture = this.renderTexture0;
+            var importer = (TextureProxyImporter)this.target;            
+            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
+        }
 
+        private void Load(string assetPath)
+        {
             var bytes = (byte[])null;
             try
             {
-                bytes = File.ReadAllBytes(AssetDatabase.GetAssetPath(this.assetTarget));
+                bytes = File.ReadAllBytes(assetPath);
             }
             catch (IOException)
             {
                 return;
             }
 
-            var importer = (TextureProxyImporter)this.target;
+            this.sourceTexture =
+                new Texture2D
+                (
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
+                    TextureFormat.ARGB32,
+                    0,
+                    false
+                );
             this.sourceTexture.LoadImage(bytes);
-            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
         }
 
         public override void OnDisable()
@@ -85,7 +91,12 @@ namespace akanevrc.TextureProxy
                 RenderTexture.ReleaseTemporary(this.renderTexture1);
                 this.renderTexture1 = null;
             }
-            if (this.sourceTexture != null)
+            if (this.workAssetPath != null)
+            {
+                AssetDatabase.DeleteAsset(this.workAssetPath);
+                AssetDatabase.Refresh();
+            }
+            else if (this.sourceTexture != null)
             {
                 UnityEngine.Object.DestroyImmediate(this.sourceTexture);
                 this.sourceTexture = null;
@@ -120,10 +131,6 @@ namespace akanevrc.TextureProxy
             this.importSettingsFoldout = EditorGUILayout.Foldout(this.importSettingsFoldout, "Texture Import Settings");
             if (this.importSettingsFoldout)
             {
-                SourceTextureInformationFields(this.sourceTextureInformation);
-
-                EditorGUILayout.Space();
-
                 TextureImporterSettingsFields(this.textureImporterSettings, IsNPOT(this.sourceTextureInformation));
 
                 EditorGUILayout.Space();
@@ -145,6 +152,12 @@ namespace akanevrc.TextureProxy
 
         private void FilterSettingsList(SerializedProperty settingsList)
         {
+            if (GUILayout.Button("Add"))
+            {
+                settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
+                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
+            }
+
             var movingUpIndex = new List<int>();
             var movingDownIndex = new List<int>();
             var insertingIndex = new List<int>();
@@ -193,12 +206,6 @@ namespace akanevrc.TextureProxy
             {
                 settingsList.DeleteArrayElementAtIndex(index);
             }
-
-            if (GUILayout.Button("Add"))
-            {
-                settingsList.InsertArrayElementAtIndex(settingsList.arraySize);
-                InitFilterSettings(settingsList.GetArrayElementAtIndex(settingsList.arraySize - 1));
-            }
         }
 
         private void InitFilterSettings(SerializedProperty settings)
@@ -212,9 +219,13 @@ namespace akanevrc.TextureProxy
             var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
             var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
+            var hue = settings.FindPropertyRelative("hue");
+            var saturation = settings.FindPropertyRelative("saturation");
+            var luminosity = settings.FindPropertyRelative("luminosity");
+            var contrast = settings.FindPropertyRelative("contrast");
 
             toggle.boolValue = true;
-            mode.intValue = (int)FilterMode.Multiply;
+            mode.intValue = (int)FilterMode.ColorCorrection;
             colorTexture.objectReferenceValue = null;
             colorTextureScale.vector2Value = new Vector2(1F, 1F);
             colorTextureOffset.vector2Value = new Vector2(0F, 0F);
@@ -222,6 +233,10 @@ namespace akanevrc.TextureProxy
             maskTextureScale.vector2Value = new Vector2(1F, 1F);
             maskTextureOffset.vector2Value = new Vector2(0F, 0F);
             color.colorValue = Color.white;
+            hue.floatValue = 0F;
+            saturation.floatValue = 0F;
+            luminosity.floatValue = 0F;
+            contrast.floatValue = 0F;
         }
 
         private void FilterSettingsFields(SerializedProperty settings)
@@ -234,14 +249,47 @@ namespace akanevrc.TextureProxy
             var maskTextureScale = settings.FindPropertyRelative("maskTextureScale");
             var maskTextureOffset = settings.FindPropertyRelative("maskTextureOffset");
             var color = settings.FindPropertyRelative("color");
+            var hue = settings.FindPropertyRelative("hue");
+            var saturation = settings.FindPropertyRelative("saturation");
+            var luminosity = settings.FindPropertyRelative("luminosity");
+            var contrast = settings.FindPropertyRelative("contrast");
 
             mode.intValue = (int)(FilterMode)EditorGUILayout.EnumPopup("Mode", (FilterMode)mode.intValue);
             EditorGUILayout.Space();
-            TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
-            EditorGUILayout.Space();
-            TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
-            EditorGUILayout.Space();
-            color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+
+            if (mode.intValue == (int)FilterMode.ColorCorrection)
+            {
+                hue.floatValue = EditorGUILayout.Slider("Hue", hue.floatValue, -180F, 180F);
+                saturation.floatValue = EditorGUILayout.Slider("Saturation", saturation.floatValue, -1F, 1F);
+                luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
+                color.colorValue =
+                    new Color(
+                        color.colorValue.r,
+                        color.colorValue.g,
+                        color.colorValue.b,
+                        EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
+                    );
+            }
+            else if (mode.intValue == (int)FilterMode.ContrastCorrection)
+            {
+                luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
+                contrast.floatValue = EditorGUILayout.Slider("Contrast", contrast.floatValue, -1F, 1F);
+                color.colorValue =
+                    new Color(
+                        color.colorValue.r,
+                        color.colorValue.g,
+                        color.colorValue.b,
+                        EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
+                    );
+            }
+            else
+            {
+                TextureField("Color Texture", colorTexture, colorTextureScale, colorTextureOffset);
+                EditorGUILayout.Space();
+                TextureField("Mask", maskTexture, maskTextureScale, maskTextureOffset);
+                EditorGUILayout.Space();
+                color.colorValue = EditorGUILayout.ColorField("Color", color.colorValue);
+            }
         }
 
         private void TextureField(string label, SerializedProperty texture, SerializedProperty scale, SerializedProperty offset)
@@ -254,19 +302,6 @@ namespace akanevrc.TextureProxy
             scale.vector2Value = EditorGUILayout.Vector2Field("Tiling", scale.vector2Value);
             offset.vector2Value = EditorGUILayout.Vector2Field("Offset", offset.vector2Value);
             EditorGUI.indentLevel--;
-        }
-
-        private void SourceTextureInformationFields(SerializedProperty information)
-        {
-            var width = information.FindPropertyRelative("width");
-            var height = information.FindPropertyRelative("height");
-            var containsAlpha = information.FindPropertyRelative("containsAlpha");
-            var hdr = information.FindPropertyRelative("hdr");
-
-            width.intValue = EditorGUILayout.IntField("Width", width.intValue);
-            height.intValue = EditorGUILayout.IntField("Height", height.intValue);
-            containsAlpha.boolValue = EditorGUILayout.Toggle("Contains Alpha", containsAlpha.boolValue);
-            hdr.boolValue = EditorGUILayout.Toggle("HDR", hdr.boolValue);
         }
 
         private bool IsNPOT(SerializedProperty information)
@@ -358,6 +393,7 @@ namespace akanevrc.TextureProxy
             var format = settings.FindPropertyRelative("format");
             var textureCompression = settings.FindPropertyRelative("textureCompression");
             var crunchedCompression = settings.FindPropertyRelative("crunchedCompression");
+            var compressionQuality = settings.FindPropertyRelative("compressionQuality");
 
             maxTextureSize.intValue = EditorGUILayout.IntField("Max Size", maxTextureSize.intValue);
             resizeAlgorithm.intValue = (int)(TextureResizeAlgorithm)EditorGUILayout.EnumPopup("Resize Algorithm", (TextureResizeAlgorithm)resizeAlgorithm.intValue);
@@ -367,6 +403,12 @@ namespace akanevrc.TextureProxy
             {
                 EditorGUI.indentLevel++;
                 crunchedCompression.boolValue = EditorGUILayout.Toggle("Use Crunch Compression", crunchedCompression.boolValue);
+                if (crunchedCompression.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    compressionQuality.intValue = EditorGUILayout.IntSlider("Compressor Quality", compressionQuality.intValue, 0, 100);
+                    EditorGUI.indentLevel--;
+                }
                 EditorGUI.indentLevel--;
             }
         }
