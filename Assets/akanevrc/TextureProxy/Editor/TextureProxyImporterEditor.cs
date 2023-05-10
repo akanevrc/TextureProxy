@@ -294,7 +294,7 @@ namespace akanevrc.TextureProxy
                         EditorGUILayout.Slider("Alpha", color.colorValue.a, 0F, 1F)
                     );
             }
-            if (mode.intValue == (int)FilterMode.ContrastCorrection)
+            else if (mode.intValue == (int)FilterMode.ContrastCorrection)
             {
                 luminosity.floatValue = EditorGUILayout.Slider("Luminosity", luminosity.floatValue, -1F, 1F);
                 contrast.floatValue = EditorGUILayout.Slider("Contrast", contrast.floatValue, -1F, 1F);
