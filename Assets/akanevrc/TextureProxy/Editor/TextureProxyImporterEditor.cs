@@ -83,8 +83,8 @@ namespace akanevrc.TextureProxy
             this.sourceTexture =
                 new Texture2D
                 (
-                    2,
-                    2,
+                    (int)TextureProxyImporterEditor.previewTextureSize.x,
+                    (int)TextureProxyImporterEditor.previewTextureSize.y,
                     TextureFormat.ARGB32,
                     0,
                     false

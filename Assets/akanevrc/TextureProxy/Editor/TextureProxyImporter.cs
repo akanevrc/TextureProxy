@@ -229,8 +229,8 @@ namespace akanevrc.TextureProxy
             var src =
                 new Texture2D
                 (
-                    2,
-                    2,
+                    w,
+                    h,
                     this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
                     0,
                     true
