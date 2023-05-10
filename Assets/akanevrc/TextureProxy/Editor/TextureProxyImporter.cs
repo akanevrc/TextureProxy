@@ -113,8 +113,11 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
+        public static readonly string workFolder = "Assets/akanevrc/TextureProxy/Editor/work";
+
         internal static Texture activeTexture;
         internal static TextureImporter activeImporter;
+        internal static bool workFileCreated;
 
         public List<FilterSettings> filterSettingsList = new List<FilterSettings>();
         public SourceTextureProxyInformation sourceTextureInformation =
@@ -172,14 +175,49 @@ namespace akanevrc.TextureProxy
                 TextureProxyImporter.activeImporter = null;
             }
 
+            var pixels = LoadAndApply(ctx.assetPath);
+            if (pixels == null) return;
+
+            var output =
+                TextureGenerator.GenerateTexture
+                (
+                    new TextureGenerationSettings(textureImporterSettings.textureType)
+                    {
+                        assetPath = ctx.assetPath,
+                        enablePostProcessor = false,
+                        platformSettings = (TextureImporterPlatformSettings)textureImporterPlatformSettings,
+                        sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
+                        textureImporterSettings = (TextureImporterSettings)textureImporterSettings
+                    },
+                    new NativeArray<Color32>(pixels, Allocator.Temp)
+                );
+            ctx.AddObjectToAsset("Texture", output.texture);
+            ctx.SetMainObject(output.texture);
+        }
+
+        private Color32[] LoadAndApply(string assetPath)
+        {
+            var ext = Path.GetExtension(Path.GetFileNameWithoutExtension(assetPath)).ToLower();
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+            {
+                return LoadAndApplyAsPngOrJpeg(assetPath);
+            }
+            else
+            {
+                return LoadAndApplyAsGenericImage(assetPath);
+            }
+        }
+
+        private Color32[] LoadAndApplyAsPngOrJpeg(string assetPath)
+        {
             var bytes = (byte[])null;
             try
             {
-                bytes = File.ReadAllBytes(ctx.assetPath);
+                bytes = File.ReadAllBytes(assetPath);
             }
             catch (IOException)
             {
-                return;
+                return null;
             }
 
             var w = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.width, this.textureImporterPlatformSettings.maxTextureSize));
@@ -191,8 +229,8 @@ namespace akanevrc.TextureProxy
             var src =
                 new Texture2D
                 (
-                    w,
-                    h,
+                    2,
+                    2,
                     this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
                     0,
                     true
@@ -208,22 +246,9 @@ namespace akanevrc.TextureProxy
                 );
             try
             {
-                ApplyFilters(bytes, src, dest, renderTexture0, renderTexture1);
-
-                var output = TextureGenerator.GenerateTexture
-                (
-                    new TextureGenerationSettings(textureImporterSettings.textureType)
-                    {
-                        assetPath = ctx.assetPath,
-                        enablePostProcessor = false,
-                        platformSettings = (TextureImporterPlatformSettings)textureImporterPlatformSettings,
-                        sourceTextureInformation = (SourceTextureInformation)sourceTextureInformation,
-                        textureImporterSettings = (TextureImporterSettings)textureImporterSettings
-                    },
-                    new NativeArray<Color32>(dest.GetPixels32(), Allocator.Temp)
-                );
-                ctx.AddObjectToAsset("Texture", output.texture);
-                ctx.SetMainObject(output.texture);
+                src.LoadImage(bytes);
+                ApplyFilters(src, dest, renderTexture0, renderTexture1);
+                return dest.GetPixels32();
             }
             finally
             {
@@ -234,9 +259,57 @@ namespace akanevrc.TextureProxy
             }
         }
 
-        private void ApplyFilters(byte[] bytes, Texture2D src, Texture2D dest, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        private Color32[] LoadAndApplyAsGenericImage(string assetPath)
         {
-            src.LoadImage(bytes);
+            if (!assetPath.EndsWith(".texproxy")) return null;
+
+            var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileNameWithoutExtension(assetPath));
+            
+            if (workFileCreated)
+            {
+                workFileCreated = false;
+            }
+            else
+            {
+                AssetDatabase.DeleteAsset(workAssetPath);
+                File.Copy(assetPath, workAssetPath, true);
+                AssetDatabase.Refresh();
+            }
+
+            var workTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(workAssetPath);
+
+            var w = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.width, this.textureImporterPlatformSettings.maxTextureSize));
+            var h = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.height, this.textureImporterPlatformSettings.maxTextureSize));
+
+            var renderTexture0 = RenderTexture.GetTemporary(w, h, 0);
+            var renderTexture1 = RenderTexture.GetTemporary(w, h, 0);
+
+            var dest =
+                new Texture2D
+                (
+                    w,
+                    h,
+                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
+                    0,
+                    true
+                );
+            try
+            {
+                ApplyFilters(workTexture, dest, renderTexture0, renderTexture1);
+                return dest.GetPixels32();
+            }
+            finally
+            {
+                RenderTexture.ReleaseTemporary(renderTexture0);
+                RenderTexture.ReleaseTemporary(renderTexture1);
+                UnityEngine.Object.DestroyImmediate(dest);
+                AssetDatabase.DeleteAsset(workAssetPath);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        private void ApplyFilters(Texture2D src, Texture2D dest, RenderTexture renderTexture0, RenderTexture renderTexture1)
+        {
             var renderTexture = Blitter.Blit(this.filterSettingsList, src, renderTexture0, renderTexture1);
 
             var oldRenderTexture = RenderTexture.active;

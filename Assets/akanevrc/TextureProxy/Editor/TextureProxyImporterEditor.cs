@@ -22,6 +22,7 @@ namespace akanevrc.TextureProxy
         private RenderTexture renderTexture0;
         private RenderTexture renderTexture1;
         private Texture2D sourceTexture;
+        private string workAssetPath = null;
         private bool importSettingsFoldout;
 
         public override void OnEnable()
@@ -46,31 +47,60 @@ namespace akanevrc.TextureProxy
                     (int)TextureProxyImporterEditor.previewTextureSize.y,
                     0
                 );
-            this.sourceTexture =
-                new Texture2D
-                (
-                    (int)TextureProxyImporterEditor.previewTextureSize.x,
-                    (int)TextureProxyImporterEditor.previewTextureSize.y,
-                    TextureFormat.RGBA32,
-                    0,
-                    false
-                );
+
+            Load(AssetDatabase.GetAssetPath(this.assetTarget));
 
             this.previewTexture = this.renderTexture0;
+            var importer = (TextureProxyImporter)this.target;            
+            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
+        }
 
+        private void Load(string assetPath)
+        {
+            var ext = Path.GetExtension(Path.GetFileNameWithoutExtension(assetPath)).ToLower();
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+            {
+                LoadAsPngOrJpeg(assetPath);
+            }
+            else
+            {
+                LoadAsGenericImage(assetPath);
+            }
+        }
+
+        private void LoadAsPngOrJpeg(string assetPath)
+        {
             var bytes = (byte[])null;
             try
             {
-                bytes = File.ReadAllBytes(AssetDatabase.GetAssetPath(this.assetTarget));
+                bytes = File.ReadAllBytes(assetPath);
             }
             catch (IOException)
             {
                 return;
             }
 
-            var importer = (TextureProxyImporter)this.target;
+            this.sourceTexture =
+                new Texture2D
+                (
+                    2,
+                    2,
+                    TextureFormat.ARGB32,
+                    0,
+                    false
+                );
             this.sourceTexture.LoadImage(bytes);
-            this.previewTexture = Blitter.Blit(importer.filterSettingsList, this.sourceTexture, this.renderTexture0, this.renderTexture1);
+        }
+
+        private void LoadAsGenericImage(string assetPath)
+        {
+            if (!assetPath.EndsWith(".texproxy")) return;
+
+            this.workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileNameWithoutExtension(assetPath));
+            AssetDatabase.DeleteAsset(this.workAssetPath);
+            File.Copy(assetPath, this.workAssetPath, true);
+            AssetDatabase.Refresh();
+            this.sourceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(this.workAssetPath);
         }
 
         public override void OnDisable()
@@ -85,7 +115,12 @@ namespace akanevrc.TextureProxy
                 RenderTexture.ReleaseTemporary(this.renderTexture1);
                 this.renderTexture1 = null;
             }
-            if (this.sourceTexture != null)
+            if (this.workAssetPath != null)
+            {
+                AssetDatabase.DeleteAsset(this.workAssetPath);
+                AssetDatabase.Refresh();
+            }
+            else if (this.sourceTexture != null)
             {
                 UnityEngine.Object.DestroyImmediate(this.sourceTexture);
                 this.sourceTexture = null;

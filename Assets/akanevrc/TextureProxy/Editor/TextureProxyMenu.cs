@@ -32,21 +32,27 @@ namespace akanevrc.TextureProxy
                 );
             if (string.IsNullOrWhiteSpace(newPath)) return;
 
+            var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileName(path));
+
             TextureProxyImporter.activeTexture = texture;
             TextureProxyImporter.activeImporter = importer;
+            TextureProxyImporter.workFileCreated = true;
 
             try
             {
                 AssetDatabase.DeleteAsset(newPath);
                 File.Copy(path, newPath, true);
-                AssetDatabase.ImportAsset(newPath);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.DeleteAsset(workAssetPath);
+                File.Copy(path, workAssetPath, true);
                 AssetDatabase.Refresh();
+                AssetDatabase.SaveAssets();
             }
             finally
             {
                 TextureProxyImporter.activeTexture = null;
                 TextureProxyImporter.activeImporter = null;
+                TextureProxyImporter.workFileCreated = false;
+                AssetDatabase.DeleteAsset(workAssetPath);
             }
         }
 
@@ -139,21 +145,26 @@ namespace akanevrc.TextureProxy
             foreach (var (t, path, importer, zs) in supporteds)
             {
                 var newPath = Path.Combine(dirPath, TextureProxyFileName(Path.GetFileName(path)));
+                var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileName(path));
 
                 TextureProxyImporter.activeTexture = t;
                 TextureProxyImporter.activeImporter = (TextureImporter)importer;
+                TextureProxyImporter.workFileCreated = true;
 
                 try
                 {
                     AssetDatabase.DeleteAsset(newPath);
                     File.Copy(path, newPath, true);
-                    AssetDatabase.ImportAsset(newPath);
+                    AssetDatabase.DeleteAsset(workAssetPath);
+                    File.Copy(path, workAssetPath, true);
                     AssetDatabase.Refresh();
                 }
                 finally
                 {
                     TextureProxyImporter.activeTexture = null;
                     TextureProxyImporter.activeImporter = null;
+                    TextureProxyImporter.workFileCreated = false;
+                    AssetDatabase.DeleteAsset(workAssetPath);
                 }
 
                 var textureProxy = AssetDatabase.LoadAssetAtPath<Texture>(newPath);
@@ -164,8 +175,8 @@ namespace akanevrc.TextureProxy
                 }
             }
 
-            AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            AssetDatabase.SaveAssets();
         }
 
         [MenuItem("Assets/Texture Proxy/Duplicate Material", true)]
