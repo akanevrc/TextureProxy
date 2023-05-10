@@ -57,19 +57,6 @@ namespace akanevrc.TextureProxy
 
         private void Load(string assetPath)
         {
-            var ext = Path.GetExtension(Path.GetFileNameWithoutExtension(assetPath)).ToLower();
-            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
-            {
-                LoadAsPngOrJpeg(assetPath);
-            }
-            else
-            {
-                LoadAsGenericImage(assetPath);
-            }
-        }
-
-        private void LoadAsPngOrJpeg(string assetPath)
-        {
             var bytes = (byte[])null;
             try
             {
@@ -90,17 +77,6 @@ namespace akanevrc.TextureProxy
                     false
                 );
             this.sourceTexture.LoadImage(bytes);
-        }
-
-        private void LoadAsGenericImage(string assetPath)
-        {
-            if (!assetPath.EndsWith(".texproxy")) return;
-
-            this.workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileNameWithoutExtension(assetPath));
-            AssetDatabase.DeleteAsset(this.workAssetPath);
-            File.Copy(assetPath, this.workAssetPath, true);
-            AssetDatabase.Refresh();
-            this.sourceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(this.workAssetPath);
         }
 
         public override void OnDisable()

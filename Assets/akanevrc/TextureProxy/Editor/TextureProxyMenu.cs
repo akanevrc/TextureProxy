@@ -13,9 +13,11 @@ namespace akanevrc.TextureProxy
         {
             var texture = (Texture)Selection.activeObject;
             var path = AssetDatabase.GetAssetPath(texture);
+            var ext = Path.GetExtension(path).ToLower();
+
             var importer = (TextureImporter)AssetImporter.GetAtPath(path);
 
-            if (!TextureProxyImporter.SupportSettings(importer, out var errors))
+            if (!TextureProxyImporter.SupportSettings(importer, path, out var errors))
             {
                 EditorUtility.DisplayDialog("Error: Duplicate As Texture Proxy", string.Join(Environment.NewLine, errors), "OK");
                 return;
@@ -32,18 +34,13 @@ namespace akanevrc.TextureProxy
                 );
             if (string.IsNullOrWhiteSpace(newPath)) return;
 
-            var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileName(path));
-
             TextureProxyImporter.activeTexture = texture;
             TextureProxyImporter.activeImporter = importer;
-            TextureProxyImporter.workFileCreated = true;
 
             try
             {
                 AssetDatabase.DeleteAsset(newPath);
                 File.Copy(path, newPath, true);
-                AssetDatabase.DeleteAsset(workAssetPath);
-                File.Copy(path, workAssetPath, true);
                 AssetDatabase.Refresh();
                 AssetDatabase.SaveAssets();
             }
@@ -51,8 +48,6 @@ namespace akanevrc.TextureProxy
             {
                 TextureProxyImporter.activeTexture = null;
                 TextureProxyImporter.activeImporter = null;
-                TextureProxyImporter.workFileCreated = false;
-                AssetDatabase.DeleteAsset(workAssetPath);
             }
         }
 
@@ -101,7 +96,7 @@ namespace akanevrc.TextureProxy
                 .ToArray();
             var supporteds =
                 importers
-                .Where(z => z.importer is TextureImporter importer && TextureProxyImporter.SupportSettings(importer, out var _))
+                .Where(z => z.importer is TextureImporter importer && TextureProxyImporter.SupportSettings(importer, z.path, out var _))
                 .ToArray();
 
             if (supporteds.Length == 0)
@@ -145,26 +140,20 @@ namespace akanevrc.TextureProxy
             foreach (var (t, path, importer, zs) in supporteds)
             {
                 var newPath = Path.Combine(dirPath, TextureProxyFileName(Path.GetFileName(path)));
-                var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileName(path));
 
                 TextureProxyImporter.activeTexture = t;
                 TextureProxyImporter.activeImporter = (TextureImporter)importer;
-                TextureProxyImporter.workFileCreated = true;
 
                 try
                 {
                     AssetDatabase.DeleteAsset(newPath);
                     File.Copy(path, newPath, true);
-                    AssetDatabase.DeleteAsset(workAssetPath);
-                    File.Copy(path, workAssetPath, true);
                     AssetDatabase.Refresh();
                 }
                 finally
                 {
                     TextureProxyImporter.activeTexture = null;
                     TextureProxyImporter.activeImporter = null;
-                    TextureProxyImporter.workFileCreated = false;
-                    AssetDatabase.DeleteAsset(workAssetPath);
                 }
 
                 var textureProxy = AssetDatabase.LoadAssetAtPath<Texture>(newPath);

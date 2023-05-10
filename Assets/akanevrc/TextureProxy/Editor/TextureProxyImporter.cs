@@ -113,11 +113,8 @@ namespace akanevrc.TextureProxy
     [ScriptedImporter(1, "texproxy")]
     public class TextureProxyImporter : ScriptedImporter
     {
-        public static readonly string workFolder = "Assets/akanevrc/TextureProxy/Editor/work";
-
         internal static Texture activeTexture;
         internal static TextureImporter activeImporter;
-        internal static bool workFileCreated;
 
         public List<FilterSettings> filterSettingsList = new List<FilterSettings>();
         public SourceTextureProxyInformation sourceTextureInformation =
@@ -197,19 +194,6 @@ namespace akanevrc.TextureProxy
 
         private Color32[] LoadAndApply(string assetPath)
         {
-            var ext = Path.GetExtension(Path.GetFileNameWithoutExtension(assetPath)).ToLower();
-            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
-            {
-                return LoadAndApplyAsPngOrJpeg(assetPath);
-            }
-            else
-            {
-                return LoadAndApplyAsGenericImage(assetPath);
-            }
-        }
-
-        private Color32[] LoadAndApplyAsPngOrJpeg(string assetPath)
-        {
             var bytes = (byte[])null;
             try
             {
@@ -259,55 +243,6 @@ namespace akanevrc.TextureProxy
             }
         }
 
-        private Color32[] LoadAndApplyAsGenericImage(string assetPath)
-        {
-            if (!assetPath.EndsWith(".texproxy")) return null;
-
-            var workAssetPath = Path.Combine(TextureProxyImporter.workFolder, Path.GetFileNameWithoutExtension(assetPath));
-            
-            if (workFileCreated)
-            {
-                workFileCreated = false;
-            }
-            else
-            {
-                AssetDatabase.DeleteAsset(workAssetPath);
-                File.Copy(assetPath, workAssetPath, true);
-                AssetDatabase.Refresh();
-            }
-
-            var workTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(workAssetPath);
-
-            var w = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.width, this.textureImporterPlatformSettings.maxTextureSize));
-            var h = Mathf.NextPowerOfTwo(Mathf.Min(this.sourceTextureInformation.height, this.textureImporterPlatformSettings.maxTextureSize));
-
-            var renderTexture0 = RenderTexture.GetTemporary(w, h, 0);
-            var renderTexture1 = RenderTexture.GetTemporary(w, h, 0);
-
-            var dest =
-                new Texture2D
-                (
-                    w,
-                    h,
-                    this.sourceTextureInformation.containsAlpha ? TextureFormat.ARGB32 : TextureFormat.RGB24,
-                    0,
-                    true
-                );
-            try
-            {
-                ApplyFilters(workTexture, dest, renderTexture0, renderTexture1);
-                return dest.GetPixels32();
-            }
-            finally
-            {
-                RenderTexture.ReleaseTemporary(renderTexture0);
-                RenderTexture.ReleaseTemporary(renderTexture1);
-                UnityEngine.Object.DestroyImmediate(dest);
-                AssetDatabase.DeleteAsset(workAssetPath);
-                AssetDatabase.Refresh();
-            }
-        }
-
         private void ApplyFilters(Texture2D src, Texture2D dest, RenderTexture renderTexture0, RenderTexture renderTexture1)
         {
             var renderTexture = Blitter.Blit(this.filterSettingsList, src, renderTexture0, renderTexture1);
@@ -319,7 +254,7 @@ namespace akanevrc.TextureProxy
             RenderTexture.active = oldRenderTexture;
         }
 
-        public static bool SupportSettings(TextureImporter importer, out string[] errors)
+        public static bool SupportSettings(TextureImporter importer, string path, out string[] errors)
         {
             var errorList = new List<string>();
 
@@ -336,6 +271,12 @@ namespace akanevrc.TextureProxy
             if (importer.GetPlatformTextureSettings("Standalone").overridden || importer.GetPlatformTextureSettings("Android").overridden)
             {
                 errorList.Add("Default platform texture settings must not be overridden.");
+            }
+
+            var ext = Path.GetExtension(path).ToLower();
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg")
+            {
+                errorList.Add("This graphics format is not supported.");
             }
 
             errors = errorList.ToArray();
